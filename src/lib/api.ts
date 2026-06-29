@@ -1,4 +1,4 @@
-import { Hospital, Ambulance } from '@/types';
+import { Hospital, Ambulance, Slot, Appointment } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://110.34.25.249/api';
 
@@ -75,6 +75,39 @@ export const hospitalApi = {
 export const ambulanceApi = {
   getAll: async () => {
     return apiRequest<Ambulance[]>('/ambulances');
+  },
+};
+
+export const slotApi = {
+  getAll: async () => {
+    return apiRequest<Slot[]>('/doctor/slots');
+  },
+  getMySlots: async () => {
+    return apiRequest<Slot[]>('/doctor/slots/my');
+  },
+  create: async (slotData: {
+    hospitalId: string;
+    slotDate: string;
+    startTime: string;
+    endTime: string;
+    maxTokens: number;
+  }) => {
+    return apiRequest<Slot>('/doctor/slots', {
+      method: 'POST',
+      body: JSON.stringify(slotData),
+    });
+  },
+};
+
+export const appointmentApi = {
+  book: async (doctorSlotId: string, reason: string) => {
+    return apiRequest<Appointment>('/appointments/book', {
+      method: 'POST',
+      body: JSON.stringify({ doctorSlotId, reason }),
+    });
+  },
+  getMyAppointments: async () => {
+    return apiRequest<Appointment[]>('/appointments/my');
   },
 };
 
