@@ -5,8 +5,8 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('zeneva_token')?.value;
   const { pathname } = request.nextUrl;
 
-  // Protect /dashboard and nested routes
-  if (pathname.startsWith('/dashboard')) {
+  // Protect /dashboard and nested routes, and the post-signup password step
+  if (pathname.startsWith('/dashboard') || pathname.startsWith('/set-password')) {
     if (!token) {
       const loginUrl = new URL('/login', request.url);
       return NextResponse.redirect(loginUrl);
@@ -25,5 +25,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login'],
+  matcher: ['/dashboard/:path*', '/login', '/set-password'],
 };

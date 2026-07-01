@@ -13,6 +13,8 @@ interface AuthContextType {
   isLoading: boolean;
   requestOtp: (email: string) => Promise<void>;
   verifyOtp: (email: string, code: string) => Promise<void>;
+  loginWithPassword: (email: string, password: string) => Promise<void>;
+  setPassword: (password: string) => Promise<void>;
   signOut: () => void;
 }
 
@@ -46,31 +48,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await authApi.requestOtp(email);
   };
 
+  // Stores the access token and derives auth state from it. Returns the
+  // decoded token so callers can branch on its claims (e.g. redirect target).
+  const applyAccessToken = (accessToken: string) => {
+    const decoded = decodeJwt(accessToken);
+    if (!decoded) throw new Error('Invalid authentication response token');
+
+    setToken(accessToken);
+    setTokenState(accessToken);
+    setUserId(decoded.userId);
+    setRole(decoded.role);
+
+    return decoded;
+  };
+
   const verifyOtp = async (email: string, code: string) => {
     setIsLoading(true);
     try {
       const response = await authApi.verifyOtp(email, code);
-      if (response && response.accessToken) {
-        const accessToken = response.accessToken;
-        setToken(accessToken);
-        setTokenState(accessToken);
-        
-        const decoded = decodeJwt(accessToken);
-        if (decoded) {
-          setUserId(decoded.userId);
-          setRole(decoded.role);
-          
-          // Successful log in, redirect to dashboard
-          router.push('/dashboard');
-        } else {
-          throw new Error('Invalid authentication response token');
-        }
-      } else {
+      if (!response || !response.accessToken) {
         throw new Error('Failed to verify OTP');
       }
+
+      applyAccessToken(response.accessToken);
+      router.push(response.requiresPasswordSetup ? '/set-password' : '/dashboard');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const loginWithPassword = async (email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      const response = await authApi.login(email, password);
+      if (!response || !response.accessToken) {
+        throw new Error('Failed to log in');
+      }
+
+      applyAccessToken(response.accessToken);
+      router.push('/dashboard');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const setPassword = async (password: string) => {
+    await authApi.setPassword(password);
+    router.push('/dashboard');
   };
 
   const signOut = () => {
@@ -90,6 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         requestOtp,
         verifyOtp,
+        loginWithPassword,
+        setPassword,
         signOut,
       }}
     >

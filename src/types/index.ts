@@ -11,6 +11,10 @@ export interface User {
   createdAt: string;
 }
 
+export interface UserProfile extends User {
+  hasPassword: boolean;
+}
+
 export interface DecodedToken {
   userId: string;
   role: UserRole;

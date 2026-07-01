@@ -1,4 +1,4 @@
-import { Hospital, Ambulance, Slot, Appointment, Specialisation, User, Province } from '@/types';
+import { Hospital, Ambulance, Slot, Appointment, Specialisation, User, UserProfile, Province } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.zenivahealthcare.com/api';
 
@@ -51,11 +51,43 @@ export const authApi = {
       body: JSON.stringify({ email, purpose }),
     });
   },
-  
+
   verifyOtp: async (email: string, code: string, purpose: string = 'login') => {
-    return apiRequest<{ accessToken: string }>('/auth/verify-otp', {
+    return apiRequest<{ accessToken: string; requiresPasswordSetup?: boolean }>('/auth/verify-otp', {
       method: 'POST',
       body: JSON.stringify({ email, code, purpose }),
+    });
+  },
+
+  login: async (email: string, password: string) => {
+    return apiRequest<{ accessToken: string }>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+  },
+
+  setPassword: async (password: string) => {
+    return apiRequest<{ message: string }>('/auth/set-password', {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    });
+  },
+
+  getMe: async () => {
+    return apiRequest<UserProfile>('/auth/me');
+  },
+
+  updateProfile: async (fullName: string) => {
+    return apiRequest<UserProfile>('/auth/me', {
+      method: 'PATCH',
+      body: JSON.stringify({ fullName }),
+    });
+  },
+
+  changePassword: async (currentPassword: string | undefined, newPassword: string) => {
+    return apiRequest<{ message: string }>('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
     });
   },
 };
@@ -105,6 +137,23 @@ export const locationApi = {
 export const ambulanceApi = {
   getAll: async () => {
     return apiRequest<Ambulance[]>('/ambulances');
+  },
+  create: async (data: { name: string; phone: string; district: string; type: string; notes?: string }) => {
+    return apiRequest<{ message: string; ambulance: Ambulance }>('/ambulances', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  update: async (id: string, data: Partial<{ name: string; phone: string; district: string; type: string; notes: string }>) => {
+    return apiRequest<{ message: string; ambulance: Ambulance }>(`/ambulances/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+  remove: async (id: string) => {
+    return apiRequest<{ message: string }>(`/ambulances/${id}`, {
+      method: 'DELETE',
+    });
   },
 };
 

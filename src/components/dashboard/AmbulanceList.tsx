@@ -1,9 +1,12 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { useApi } from "@/hooks/useApi";
 import { ambulanceApi } from "@/lib/api";
 import { Spinner } from "../ui/Spinner";
+import { Button } from "../ui/Button";
+import { Input } from "../ui/Input";
 import { Ambulance } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -44,17 +47,97 @@ function getTypeConfig(type: string) {
   );
 }
 
+const EMPTY_FORM = { name: "", phone: "", district: "", type: "", notes: "" };
+
 export function AmbulanceList() {
+  const { role } = useAuth();
   const {
     data: ambulances,
     isLoading,
     error,
     execute: fetchAmbulances,
+    setData: setAmbulances,
   } = useApi(ambulanceApi.getAll);
+
+  const { isLoading: isSaving, execute: createAmbulance } = useApi(ambulanceApi.create);
+  const { execute: updateAmbulance } = useApi(ambulanceApi.update);
+  const { execute: removeAmbulance } = useApi(ambulanceApi.remove);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAmbulances();
   }, [fetchAmbulances]);
+
+  const openCreateModal = () => {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setFormError(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (ambulance: Ambulance) => {
+    setEditingId(ambulance.id);
+    setForm({
+      name: ambulance.name,
+      phone: ambulance.phone,
+      district: ambulance.district,
+      type: ambulance.type,
+      notes: ambulance.notes ?? "",
+    });
+    setFormError(null);
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+
+    if (!form.name.trim() || !form.phone.trim() || !form.district.trim() || !form.type.trim()) {
+      setFormError("Name, phone, district and type are all required.");
+      return;
+    }
+
+    const payload = {
+      name: form.name.trim(),
+      phone: form.phone.trim(),
+      district: form.district.trim(),
+      type: form.type.trim(),
+      notes: form.notes.trim() || undefined,
+    };
+
+    try {
+      if (editingId) {
+        const result = await updateAmbulance(editingId, payload);
+        setAmbulances(
+          (ambulances ?? []).map((a) => (a.id === editingId ? result.ambulance : a))
+        );
+      } else {
+        const result = await createAmbulance(payload);
+        setAmbulances([...(ambulances ?? []), result.ambulance]);
+      }
+      setIsModalOpen(false);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Failed to save ambulance");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this ambulance? This cannot be undone.")) return;
+    setDeletingId(id);
+    try {
+      await removeAmbulance(id);
+      setAmbulances((ambulances ?? []).filter((a) => a.id !== id));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete ambulance");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -69,10 +152,16 @@ export function AmbulanceList() {
           </p>
         </div>
 
-        {/* Live indicator */}
-        <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold px-3 py-1.5 rounded-full">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          Live
+        <div className="flex items-center gap-3">
+          {role === "admin" && (
+            <Button onClick={openCreateModal} size="sm">Add Ambulance</Button>
+          )}
+
+          {/* Live indicator */}
+          <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold px-3 py-1.5 rounded-full">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            Live
+          </div>
         </div>
       </div>
 
@@ -113,18 +202,52 @@ export function AmbulanceList() {
                     </div>
                   </div>
 
-                  {/* Type badge */}
-                  <span
-                    className={cn(
-                      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border",
-                      badge.className,
-                    )}
-                  >
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* Type badge */}
                     <span
-                      className={cn("w-1.5 h-1.5 rounded-full", badge.dot)}
-                    />
-                    {badge.label}
-                  </span>
+                      className={cn(
+                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border",
+                        badge.className,
+                      )}
+                    >
+                      <span
+                        className={cn("w-1.5 h-1.5 rounded-full", badge.dot)}
+                      />
+                      {badge.label}
+                    </span>
+
+                    {role === "admin" && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditModal(ambulance);
+                          }}
+                          aria-label={`Edit ${ambulance.name}`}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-primary-light transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(ambulance.id);
+                          }}
+                          disabled={deletingId === ambulance.id}
+                          aria-label={`Delete ${ambulance.name}`}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Details */}
@@ -198,6 +321,84 @@ export function AmbulanceList() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Create / Edit Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-lg w-full border border-slate-100 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-slate-800">
+                  {editingId ? "Edit Ambulance" : "Add New Ambulance"}
+                </h3>
+                <p className="text-slate-400 text-xs mt-0.5">
+                  {editingId ? "Update this ambulance's details." : "Register a new ambulance service."}
+                </p>
+              </div>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {formError && (
+              <div className="bg-red-50 text-red-600 text-xs font-semibold p-3 rounded-lg mb-4">{formError}</div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Input
+                label="Ambulance Name"
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="e.g. Nepal Red Cross Ambulance"
+                disabled={isSaving}
+                required
+              />
+              <Input
+                label="Phone"
+                value={form.phone}
+                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                placeholder="e.g. 102"
+                disabled={isSaving}
+                required
+              />
+              <Input
+                label="District"
+                value={form.district}
+                onChange={(e) => setForm((f) => ({ ...f, district: e.target.value }))}
+                placeholder="e.g. Kathmandu, or All Nepal"
+                disabled={isSaving}
+                required
+              />
+              <Input
+                label="Type"
+                value={form.type}
+                onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
+                placeholder="e.g. government, private, red_cross"
+                disabled={isSaving}
+                required
+              />
+              <Input
+                label="Notes (optional)"
+                value={form.notes}
+                onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                placeholder="e.g. 24/7, free for emergencies"
+                disabled={isSaving}
+              />
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} disabled={isSaving}>
+                  Cancel
+                </Button>
+                <Button type="submit" isLoading={isSaving}>
+                  {editingId ? "Save Changes" : "Add Ambulance"}
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

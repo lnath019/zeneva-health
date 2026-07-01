@@ -9,9 +9,11 @@ import { Input } from '@/components/ui/Input'
 const OTP_LENGTH = 6
 
 export default function LoginPage() {
-  const { requestOtp, verifyOtp } = useAuth()
+  const { requestOtp, verifyOtp, loginWithPassword } = useAuth()
 
+  const [mode, setMode] = useState<'otp' | 'password'>('otp')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [otp, setOtp] = useState<string[]>(() => Array(OTP_LENGTH).fill(''))
   const [step, setStep] = useState<'email' | 'otp'>('email')
   const [loading, setLoading] = useState(false)
@@ -22,7 +24,13 @@ export default function LoginPage() {
 
   useEffect(() => {
     setError(null)
-  }, [email, otp])
+  }, [email, otp, password])
+
+  function switchMode(next: 'otp' | 'password') {
+    setMode(next)
+    setError(null)
+    setPassword('')
+  }
 
   async function sendOtp(e: FormEvent) {
     e.preventDefault()
@@ -40,6 +48,24 @@ export default function LoginPage() {
       setTimeout(() => setInfo(null), 5000)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not send the code. Try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function submitPassword(e: FormEvent) {
+    e.preventDefault()
+
+    if (!email.trim() || !password) {
+      setError('Please enter your email and password.')
+      return
+    }
+
+    setLoading(true)
+    try {
+      await loginWithPassword(email, password)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Invalid email or password.')
     } finally {
       setLoading(false)
     }
@@ -112,6 +138,31 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {step === 'email' && (
+          <div className="mb-6 flex rounded-lg bg-tertiary p-1">
+            <button
+              type="button"
+              onClick={() => switchMode('otp')}
+              disabled={loading}
+              className={`flex-1 rounded-md py-2 text-sm font-semibold transition-colors ${
+                mode === 'otp' ? 'bg-white text-primary shadow-sm' : 'text-neutralBrand'
+              }`}
+            >
+              Email code
+            </button>
+            <button
+              type="button"
+              onClick={() => switchMode('password')}
+              disabled={loading}
+              className={`flex-1 rounded-md py-2 text-sm font-semibold transition-colors ${
+                mode === 'password' ? 'bg-white text-primary shadow-sm' : 'text-neutralBrand'
+              }`}
+            >
+              Password
+            </button>
+          </div>
+        )}
+
         {error && (
           <p className="mb-6 rounded-lg border  p-3 text-sm font-medium text-red-600">
             {error}
@@ -124,7 +175,31 @@ export default function LoginPage() {
           </p>
         )}
 
-        {step === 'email' ? (
+        {step === 'email' && mode === 'password' ? (
+          <form onSubmit={submitPassword} className="space-y-6">
+            <Input
+              label="Email Address"
+              type="email"
+              placeholder="patient@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
+              required
+            />
+            <Input
+              label="Password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+              required
+            />
+            <Button type="submit" className="w-full py-3" isLoading={loading}>
+              Sign in
+            </Button>
+          </form>
+        ) : step === 'email' ? (
           <form onSubmit={sendOtp} className="space-y-6">
             <Input
               label="Email Address"
