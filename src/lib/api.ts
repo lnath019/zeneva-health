@@ -1,4 +1,4 @@
-import { Hospital, Ambulance, Slot, Appointment, Specialisation, User, UserProfile, Province } from '@/types';
+import { Hospital, Ambulance, Slot, Appointment, Specialisation, User, UserProfile, Province, Lab, LabSlot, LabAppointment, Test } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.zenivahealthcare.com/api';
 
@@ -222,6 +222,119 @@ export const adminApi = {
   },
   getAllAppointments: async () => {
     return apiRequest<Appointment[]>('/admin/appointments');
+  },
+  getAllLabs: async () => {
+    return apiRequest<Lab[]>('/admin/labs');
+  },
+  approveLab: async (labId: string) => {
+    return apiRequest<{ message: string; lab: Lab }>(`/admin/labs/${labId}/approve`, {
+      method: 'PATCH',
+    });
+  },
+};
+
+export const testApi = {
+  getAll: async () => {
+    return apiRequest<Test[]>('/labs/tests');
+  },
+  create: async (data: { name: string; description?: string }) => {
+    return apiRequest<{ message: string; test: Test }>('/labs/tests', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  update: async (id: string, data: Partial<{ name: string; description: string }>) => {
+    return apiRequest<{ message: string; test: Test }>(`/labs/tests/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+  remove: async (id: string) => {
+    return apiRequest<{ message: string }>(`/labs/tests/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+export const labApi = {
+  getAll: async () => {
+    return apiRequest<Lab[]>('/labs');
+  },
+  register: async (data: {
+    name: string;
+    provinceId: string;
+    districtId: string;
+    municipalityId: string;
+    address?: string;
+    phone?: string;
+  }) => {
+    return apiRequest<{ message: string; lab: Lab }>('/labs/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  getMy: async () => {
+    return apiRequest<Lab>('/labs/my');
+  },
+  setMyTests: async (testIds: string[]) => {
+    return apiRequest<{ message: string; lab: Lab }>('/labs/my/tests', {
+      method: 'PATCH',
+      body: JSON.stringify({ testIds }),
+    });
+  },
+  getSlots: async (testId?: string) => {
+    const qs = testId ? `?testId=${testId}` : '';
+    return apiRequest<LabSlot[]>(`/labs/slots${qs}`);
+  },
+  getMySlots: async () => {
+    return apiRequest<LabSlot[]>('/labs/slots/my');
+  },
+  createSlot: async (slotData: {
+    slotDate: string;
+    startTime: string;
+    endTime: string;
+    maxTokens: number;
+  }) => {
+    return apiRequest<{ message: string; slot: LabSlot }>('/labs/slots', {
+      method: 'POST',
+      body: JSON.stringify(slotData),
+    });
+  },
+  pauseSlot: async (slotId: string) => {
+    return apiRequest<{ message: string; slot: LabSlot }>(`/labs/slots/${slotId}/pause`, {
+      method: 'PATCH',
+    });
+  },
+  resumeSlot: async (slotId: string) => {
+    return apiRequest<{ message: string; slot: LabSlot }>(`/labs/slots/${slotId}/resume`, {
+      method: 'PATCH',
+    });
+  },
+  endSlot: async (slotId: string) => {
+    return apiRequest<{ message: string; slot: LabSlot }>(`/labs/slots/${slotId}/end`, {
+      method: 'PATCH',
+    });
+  },
+};
+
+export const labAppointmentApi = {
+  book: async (labSlotId: string, testId: string, notes?: string) => {
+    return apiRequest<{ message: string; appointment: LabAppointment }>('/labs/appointments/book', {
+      method: 'POST',
+      body: JSON.stringify({ labSlotId, testId, notes }),
+    });
+  },
+  getMyAppointments: async () => {
+    return apiRequest<LabAppointment[]>('/labs/appointments/my');
+  },
+  getBySlot: async (labSlotId: string) => {
+    return apiRequest<LabAppointment[]>(`/labs/appointments/slot/${labSlotId}`);
+  },
+  updateStatus: async (appointmentId: string, status: LabAppointment['status']) => {
+    return apiRequest<{ message: string; appointment: LabAppointment }>(`/labs/appointments/${appointmentId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
   },
 };
 

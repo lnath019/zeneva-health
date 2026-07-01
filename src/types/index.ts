@@ -1,4 +1,4 @@
-export type UserRole = 'patient' | 'doctor' | 'admin';
+export type UserRole = 'patient' | 'doctor' | 'admin' | 'lab';
 
 export interface User {
   id: string;
@@ -133,4 +133,75 @@ export interface Ambulance {
   type: string;
   notes?: string;
   createdAt: string;
+}
+
+export interface Test {
+  id: string;
+  name: string;
+  description: string | null;
+  createdAt: string;
+}
+
+export interface LabTest {
+  id: string;
+  labId: string;
+  testId: string;
+  test: Test;
+}
+
+export interface Lab {
+  id: string;
+  userId: string;
+  name: string;
+  municipalityId: string | null;
+  address: string | null;
+  phone: string | null;
+  isApproved: boolean;
+  createdAt: string;
+  updatedAt: string;
+  user?: {
+    id: string;
+    fullName: string;
+    email: string;
+    phone: string | null;
+  };
+  municipality?: {
+    id: string;
+    name: string;
+    type: MunicipalityType;
+    district: {
+      id: string;
+      name: string;
+      province: { id: string; name: string };
+    };
+  } | null;
+  labTests?: LabTest[];
+}
+
+export interface LabSlot {
+  id: string;
+  labId: string;
+  slotDate: string;
+  startTime: string;
+  endTime: string;
+  maxTokens: number;
+  status: 'active' | 'paused' | 'ended';
+  isAvailable: boolean;
+  lab?: Lab;
+}
+
+export interface LabAppointment {
+  id: string;
+  patientId: string;
+  labSlotId: string;
+  testId: string;
+  tokenNumber: number;
+  tokenType: 'online' | 'walk_in';
+  notes: string | null;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'needs_reschedule';
+  bookedAt: string;
+  updatedAt: string;
+  test?: Test;
+  slot?: LabSlot;
+  patient?: { id: string; fullName: string; email: string; phone: string | null };
 }

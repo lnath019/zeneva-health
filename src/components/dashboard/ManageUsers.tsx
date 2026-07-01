@@ -77,6 +77,7 @@ export function ManageUsers() {
       admin: 'bg-red-50 text-red-700 border-red-200',
       doctor: 'bg-secondary/10 text-secondary border-secondary/20',
       patient: 'bg-primary/10 text-primary border-primary/20',
+      lab: 'bg-amber-50 text-amber-700 border-amber-200',
     };
     return styles[role];
   };
