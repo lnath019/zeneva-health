@@ -674,6 +674,27 @@
         },
         {
           "name": "Create Hospital (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const dataLocationTree = pm.response.json();\r",
+                  "if (dataLocationTree.length > 0) {\r",
+                  "    const sampleProvince = dataLocationTree[0];\r",
+                  "    const sampleDistrict = sampleProvince.districts[0];\r",
+                  "    const sampleMunicipality = sampleDistrict.municipalities[0];\r",
+                  "\r",
+                  "    pm.collectionVariables.set(\"sampleProvinceId\", sampleProvince.id);\r",
+                  "    pm.collectionVariables.set(\"sampleDistrictId\", sampleDistrict.id);\r",
+                  "    pm.collectionVariables.set(\"sampleMunicipalityId\", sampleMunicipality ? sampleMunicipality.id : \"\");\r",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -688,7 +709,12 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"New Test Hospital\",\n  \"address\": \"Kathmandu\",\n  \"phone\": \"01-1112233\"\n}"
+              "raw": "{\n    \"name\": \"New Test Hospital\",\n    \"provinceId\": \"{{sampleProvinceId}}\",\n    \"districtId\": \"{{sampleDistrictId}}\",\n    \"municipalityId\": \"{{sampleMunicipalityId}}\",\n    \"address\": \"Kathmandu\",\n    \"phone\": \"01-1112233\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/hospitals",

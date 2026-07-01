@@ -9,21 +9,21 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
         foreground: "var(--foreground)",
         primary: {
-          DEFAULT: "#005EB8",
-          hover: "#004B93",
-          light: "#E5F0FC",
+          DEFAULT: "rgb(var(--color-primary) / <alpha-value>)",
+          hover: "rgb(var(--color-primary-hover) / <alpha-value>)",
+          light: "rgb(var(--color-primary-light) / <alpha-value>)",
         },
         secondary: {
-          DEFAULT: "#00A3AD",
-          hover: "#00828A",
-          light: "#E6F6F7",
+          DEFAULT: "rgb(var(--color-secondary) / <alpha-value>)",
+          hover: "rgb(var(--color-secondary-hover) / <alpha-value>)",
+          light: "rgb(var(--color-secondary-light) / <alpha-value>)",
         },
         tertiary: {
-          DEFAULT: "#F0F4F8",
-          hover: "#E1E8F0",
+          DEFAULT: "rgb(var(--color-tertiary) / <alpha-value>)",
+          hover: "rgb(var(--color-tertiary-hover) / <alpha-value>)",
+          light: "rgb(var(--color-tertiary-light) / <alpha-value>)",
         },
         neutralBrand: {
           DEFAULT: "#4A5568",

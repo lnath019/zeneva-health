@@ -8,6 +8,9 @@ import { appointmentApi, slotApi } from "@/lib/api";
 import { ManageSlots } from "@/components/dashboard/ManageSlots";
 import { BookAppointment } from "@/components/dashboard/BookAppointmentList";
 import { PatientAppointments } from "@/components/dashboard/PatientAppointments";
+import { DoctorAppointments } from "@/components/dashboard/DoctorAppointments";
+import { ManageUsers } from "@/components/dashboard/ManageUsers";
+import { AllAppointments } from "@/components/dashboard/AllAppointments";
 import { Slot, Appointment } from "@/types";
 import { Spinner } from "@/components/ui/Spinner";
 
@@ -369,6 +372,11 @@ export default function DashboardPage() {
     return <BookAppointment />;
   if (activeTab === "patient-appointments" && role === "patient")
     return <PatientAppointments />;
+  if (activeTab === "doctor-appointments" && role === "doctor")
+    return <DoctorAppointments />;
+  if (activeTab === "manage-users" && role === "admin") return <ManageUsers />;
+  if (activeTab === "all-appointments" && role === "admin")
+    return <AllAppointments />;
 
   return (
     <Card className="p-12 text-center">

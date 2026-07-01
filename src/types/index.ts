@@ -3,8 +3,10 @@ export type UserRole = 'patient' | 'doctor' | 'admin';
 export interface User {
   id: string;
   email: string;
-  name?: string;
+  fullName: string;
+  phone: string | null;
   role: UserRole;
+  isVerified: boolean;
   isActive: boolean;
   createdAt: string;
 }
@@ -65,14 +67,52 @@ export interface Slot {
   isAvailable?: boolean;
 }
 
+export type MunicipalityType =
+  | 'metropolitan_city'
+  | 'sub_metropolitan_city'
+  | 'municipality'
+  | 'rural_municipality';
+
+export interface Municipality {
+  id: string;
+  name: string;
+  type: MunicipalityType;
+  districtId: string;
+}
+
+export interface District {
+  id: string;
+  name: string;
+  provinceId: string;
+  municipalities?: Municipality[];
+}
+
+export interface Province {
+  id: string;
+  name: string;
+  districts?: District[];
+}
+
 export interface Hospital {
   id: string;
   name: string;
   municipalityId: string | null;
-  address: string;
+  address: string | null;
   latitude: number | null;
   longitude: number | null;
-  phone: string;
+  phone: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  municipality?: {
+    id: string;
+    name: string;
+    type: MunicipalityType;
+    district: {
+      id: string;
+      name: string;
+      province: { id: string; name: string };
+    };
+  } | null;
 }
 
 export interface Specialisation {

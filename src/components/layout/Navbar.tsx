@@ -3,6 +3,7 @@
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
+import { ThemeSwitcher } from '@/components/theme/ThemeSwitcher';
 
 interface NavbarProps {
   activeTabLabel: string;
@@ -18,6 +19,7 @@ export function Navbar({ activeTabLabel }: NavbarProps) {
       </div>
 
       <div className="flex items-center gap-4">
+        <ThemeSwitcher />
         <Button
           variant="outline"
           size="sm"

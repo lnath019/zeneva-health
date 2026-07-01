@@ -44,7 +44,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
   };
 
   return (
-    <div className="flex bg-[#F0F4F8] min-h-screen">
+    <div className="flex bg-tertiary min-h-screen">
       {/* Sidebar Navigation */}
       <Sidebar />
 

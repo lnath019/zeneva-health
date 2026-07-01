@@ -92,7 +92,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F0F4F8] px-4">
+    <div className="flex min-h-screen items-center justify-center bg-tertiary px-4">
       <div className="flex items-center gap-2 absolute left-8 top-8 select-none">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-lg font-bold text-white">
           Z

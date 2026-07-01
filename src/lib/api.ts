@@ -1,6 +1,6 @@
-import { Hospital, Ambulance, Slot, Appointment } from '@/types';
+import { Hospital, Ambulance, Slot, Appointment, Specialisation, User, Province } from '@/types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://110.34.25.249/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.zenivahealthcare.com/api';
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -61,14 +61,44 @@ export const authApi = {
 };
 
 export const hospitalApi = {
-  getAll: async () => {
-    return apiRequest<Hospital[]>('/hospitals');
+  getAll: async (filters?: { provinceId?: string; districtId?: string; municipalityId?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.provinceId) params.set('provinceId', filters.provinceId);
+    if (filters?.districtId) params.set('districtId', filters.districtId);
+    if (filters?.municipalityId) params.set('municipalityId', filters.municipalityId);
+    const qs = params.toString();
+    return apiRequest<Hospital[]>(`/hospitals${qs ? `?${qs}` : ''}`);
   },
-  create: async (hospitalData: { name: string; address: string; phone: string }) => {
-    return apiRequest<Hospital>('/hospitals', {
+  create: async (data: {
+    name: string;
+    provinceId: string;
+    districtId: string;
+    municipalityId: string;
+    address?: string;
+    phone?: string;
+  }) => {
+    return apiRequest<{ message: string; hospital: Hospital }>('/hospitals', {
       method: 'POST',
-      body: JSON.stringify(hospitalData),
+      body: JSON.stringify(data),
     });
+  },
+};
+
+export const locationApi = {
+  getTree: async () => {
+    return apiRequest<Province[]>('/hospitals/locations');
+  },
+  search: async (name: string) => {
+    return apiRequest<{
+      municipalities: {
+        municipalityId: string;
+        municipalityName: string;
+        districtId: string;
+        districtName: string;
+        provinceId: string;
+        provinceName: string;
+      }[];
+    }>(`/hospitals/locations/search?name=${encodeURIComponent(name)}`);
   },
 };
 
@@ -99,6 +129,12 @@ export const slotApi = {
   },
 };
 
+export const doctorApi = {
+  getSpecialisations: async () => {
+    return apiRequest<Specialisation[]>('/doctor/specialisations');
+  },
+};
+
 export const appointmentApi = {
   book: async (doctorSlotId: string, reason: string) => {
     return apiRequest<Appointment>('/appointments/book', {
@@ -108,6 +144,35 @@ export const appointmentApi = {
   },
   getMyAppointments: async () => {
     return apiRequest<Appointment[]>('/appointments/my');
+  },
+  getBySlot: async (doctorSlotId: string) => {
+    return apiRequest<Appointment[]>(`/appointments/slot/${doctorSlotId}`);
+  },
+  updateStatus: async (appointmentId: string, status: Appointment['status']) => {
+    return apiRequest<Appointment>(`/appointments/${appointmentId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  },
+};
+
+export const adminApi = {
+  getAllUsers: async () => {
+    return apiRequest<User[]>('/admin/users');
+  },
+  grantDoctor: async (userId: string, nmcNumber: string, specialisationId: string) => {
+    return apiRequest('/admin/grant-doctor', {
+      method: 'POST',
+      body: JSON.stringify({ userId, nmcNumber, specialisationId }),
+    });
+  },
+  deactivateUser: async (userId: string) => {
+    return apiRequest<User>(`/admin/users/${userId}/deactivate`, {
+      method: 'PATCH',
+    });
+  },
+  getAllAppointments: async () => {
+    return apiRequest<Appointment[]>('/admin/appointments');
   },
 };
 
