@@ -2,15 +2,36 @@
 
 import React, { useEffect, useState } from 'react';
 import { useApi } from '@/hooks/useApi';
-import { slotApi, appointmentApi } from '@/lib/api';
+import { slotApi, appointmentApi, medicalHistoryApi } from '@/lib/api';
 import { Spinner } from '../ui/Spinner';
 import { Slot, Appointment } from '@/types';
 
 export function DoctorAppointments() {
   const { data: slots, isLoading: isSlotsLoading, error: slotsError, execute: fetchSlots } = useApi(slotApi.getMySlots);
-  const { data: appointments, isLoading: isApptsLoading, error: apptsError, execute: fetchAppointments } = useApi(appointmentApi.getBySlot);
+  const { data: appointments, isLoading: isApptsLoading, error: apptsError, execute: fetchAppointments, setData: setAppointments } = useApi(appointmentApi.getBySlot);
+  const { execute: verifyRecord } = useApi(medicalHistoryApi.verify);
 
   const [selectedSlotId, setSelectedSlotId] = useState('');
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
+
+  const handleVerify = async (recordId: string) => {
+    setVerifyingId(recordId);
+    try {
+      const result = await verifyRecord(recordId);
+      if (appointments) {
+        setAppointments(
+          appointments.map((appt) => ({
+            ...appt,
+            sharedRecords: appt.sharedRecords?.map((r) => (r.id === recordId ? result.record : r)),
+          }))
+        );
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to verify record');
+    } finally {
+      setVerifyingId(null);
+    }
+  };
 
   useEffect(() => {
     fetchSlots();
@@ -85,6 +106,7 @@ export function DoctorAppointments() {
                   <tr className="bg-slate-50 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
                     <th className="px-6 py-3">Token</th>
                     <th className="px-6 py-3">Reason</th>
+                    <th className="px-6 py-3">Shared Records</th>
                     <th className="px-6 py-3">Status</th>
                     <th className="px-6 py-3">Booked On</th>
                   </tr>
@@ -97,6 +119,31 @@ export function DoctorAppointments() {
                       <tr key={appt.id} className="border-t border-slate-50">
                         <td className="px-6 py-4 font-bold text-slate-800">#{appt.tokenNumber}</td>
                         <td className="px-6 py-4 text-slate-600 italic">&ldquo;{appt.reason}&rdquo;</td>
+                        <td className="px-6 py-4">
+                          {!appt.sharedRecords || appt.sharedRecords.length === 0 ? (
+                            <span className="text-xs text-slate-400">None shared</span>
+                          ) : (
+                            <div className="space-y-1.5">
+                              {appt.sharedRecords.map((record) => (
+                                <div key={record.id} className="flex items-center gap-2">
+                                  <span className="text-xs text-slate-700">{record.title}</span>
+                                  {record.status === 'verified' ? (
+                                    <span className="text-[10px] font-semibold text-emerald-700">Verified</span>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleVerify(record.id)}
+                                      disabled={verifyingId === record.id}
+                                      className="text-[10px] font-semibold text-primary hover:underline disabled:opacity-50"
+                                    >
+                                      {verifyingId === record.id ? 'Verifying…' : 'Verify'}
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <span

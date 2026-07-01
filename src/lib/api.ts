@@ -1,4 +1,4 @@
-import { Hospital, Ambulance, Slot, Appointment, Specialisation, User, UserProfile, Province, Lab, LabSlot, LabAppointment, Test } from '@/types';
+import { Hospital, Ambulance, Slot, Appointment, Specialisation, User, UserProfile, Province, Lab, LabSlot, LabAppointment, Test, MedicalHistoryRecord, RecordCategory } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.zenivahealthcare.com/api';
 
@@ -185,10 +185,10 @@ export const doctorApi = {
 };
 
 export const appointmentApi = {
-  book: async (doctorSlotId: string, reason: string) => {
+  book: async (doctorSlotId: string, reason: string, recordIds?: string[]) => {
     return apiRequest<Appointment>('/appointments/book', {
       method: 'POST',
-      body: JSON.stringify({ doctorSlotId, reason }),
+      body: JSON.stringify({ doctorSlotId, reason, recordIds }),
     });
   },
   getMyAppointments: async () => {
@@ -318,10 +318,10 @@ export const labApi = {
 };
 
 export const labAppointmentApi = {
-  book: async (labSlotId: string, testId: string, notes?: string) => {
+  book: async (labSlotId: string, testId: string, notes?: string, recordIds?: string[]) => {
     return apiRequest<{ message: string; appointment: LabAppointment }>('/labs/appointments/book', {
       method: 'POST',
-      body: JSON.stringify({ labSlotId, testId, notes }),
+      body: JSON.stringify({ labSlotId, testId, notes, recordIds }),
     });
   },
   getMyAppointments: async () => {
@@ -334,6 +334,39 @@ export const labAppointmentApi = {
     return apiRequest<{ message: string; appointment: LabAppointment }>(`/labs/appointments/${appointmentId}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
+    });
+  },
+};
+
+export const medicalHistoryApi = {
+  getMy: async () => {
+    return apiRequest<MedicalHistoryRecord[]>('/medical-history/my');
+  },
+  create: async (data: { category: RecordCategory; title: string; description?: string; recordDate?: string }) => {
+    return apiRequest<{ message: string; record: MedicalHistoryRecord }>('/medical-history', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  update: async (id: string, data: Partial<{ category: RecordCategory; title: string; description: string; recordDate: string }>) => {
+    return apiRequest<{ message: string; record: MedicalHistoryRecord }>(`/medical-history/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+  remove: async (id: string) => {
+    return apiRequest<{ message: string }>(`/medical-history/${id}`, {
+      method: 'DELETE',
+    });
+  },
+  verify: async (id: string) => {
+    return apiRequest<{ message: string; record: MedicalHistoryRecord }>(`/medical-history/${id}/verify`, {
+      method: 'PATCH',
+    });
+  },
+  unverify: async (id: string) => {
+    return apiRequest<{ message: string; record: MedicalHistoryRecord }>(`/medical-history/${id}/unverify`, {
+      method: 'PATCH',
     });
   },
 };

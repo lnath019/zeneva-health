@@ -2,15 +2,36 @@
 
 import React, { useEffect, useState } from 'react';
 import { useApi } from '@/hooks/useApi';
-import { labApi, labAppointmentApi } from '@/lib/api';
+import { labApi, labAppointmentApi, medicalHistoryApi } from '@/lib/api';
 import { Spinner } from '../ui/Spinner';
 import { LabSlot, LabAppointment } from '@/types';
 
 export function LabBookings() {
   const { data: slots, isLoading: isSlotsLoading, error: slotsError, execute: fetchSlots } = useApi(labApi.getMySlots);
-  const { data: appointments, isLoading: isApptsLoading, error: apptsError, execute: fetchAppointments } = useApi(labAppointmentApi.getBySlot);
+  const { data: appointments, isLoading: isApptsLoading, error: apptsError, execute: fetchAppointments, setData: setAppointments } = useApi(labAppointmentApi.getBySlot);
+  const { execute: verifyRecord } = useApi(medicalHistoryApi.verify);
 
   const [selectedSlotId, setSelectedSlotId] = useState('');
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
+
+  const handleVerify = async (recordId: string) => {
+    setVerifyingId(recordId);
+    try {
+      const result = await verifyRecord(recordId);
+      if (appointments) {
+        setAppointments(
+          appointments.map((appt) => ({
+            ...appt,
+            sharedRecords: appt.sharedRecords?.map((r) => (r.id === recordId ? result.record : r)),
+          }))
+        );
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to verify record');
+    } finally {
+      setVerifyingId(null);
+    }
+  };
 
   useEffect(() => {
     fetchSlots();
@@ -86,6 +107,7 @@ export function LabBookings() {
                     <th className="px-6 py-3">Token</th>
                     <th className="px-6 py-3">Patient</th>
                     <th className="px-6 py-3">Test</th>
+                    <th className="px-6 py-3">Shared Records</th>
                     <th className="px-6 py-3">Status</th>
                     <th className="px-6 py-3">Booked On</th>
                   </tr>
@@ -99,6 +121,31 @@ export function LabBookings() {
                         <td className="px-6 py-4 font-bold text-slate-800">#{appt.tokenNumber}</td>
                         <td className="px-6 py-4 text-slate-600">{appt.patient?.fullName}</td>
                         <td className="px-6 py-4 text-slate-600">{appt.test?.name}</td>
+                        <td className="px-6 py-4">
+                          {!appt.sharedRecords || appt.sharedRecords.length === 0 ? (
+                            <span className="text-xs text-slate-400">None shared</span>
+                          ) : (
+                            <div className="space-y-1.5">
+                              {appt.sharedRecords.map((record) => (
+                                <div key={record.id} className="flex items-center gap-2">
+                                  <span className="text-xs text-slate-700">{record.title}</span>
+                                  {record.status === 'verified' ? (
+                                    <span className="text-[10px] font-semibold text-emerald-700">Verified</span>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleVerify(record.id)}
+                                      disabled={verifyingId === record.id}
+                                      className="text-[10px] font-semibold text-primary hover:underline disabled:opacity-50"
+                                    >
+                                      {verifyingId === record.id ? 'Verifying…' : 'Verify'}
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <span

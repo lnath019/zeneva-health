@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
-import { slotApi, appointmentApi } from "@/lib/api";
+import { slotApi, appointmentApi, medicalHistoryApi } from "@/lib/api";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Spinner } from "../ui/Spinner";
@@ -20,6 +20,7 @@ export function BookAppointment() {
   const { isLoading: isBooking, execute: bookAppointment } = useApi(
     appointmentApi.book,
   );
+  const { data: myRecords, execute: fetchMyRecords } = useApi(medicalHistoryApi.getMy);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedHospital, setSelectedHospital] = useState("");
@@ -27,16 +28,28 @@ export function BookAppointment() {
 
   const [bookingSlot, setBookingSlot] = useState<Slot | null>(null);
   const [reason, setReason] = useState("");
+  const [selectedRecordIds, setSelectedRecordIds] = useState<string[]>([]);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSlots();
-  }, [fetchSlots]);
+    fetchMyRecords();
+  }, [fetchSlots, fetchMyRecords]);
 
   const handleOpenBookingModal = (slot: Slot) => {
     setBookingSlot(slot);
     setReason("");
+    setSelectedRecordIds([]);
     setBookingError(null);
+  };
+
+  const toggleRecord = (id: string) => {
+    setSelectedRecordIds((prev) => (prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]));
+  };
+
+  const toggleSelectAll = () => {
+    if (!myRecords) return;
+    setSelectedRecordIds((prev) => (prev.length === myRecords.length ? [] : myRecords.map((r) => r.id)));
   };
 
   const handleCloseBookingModal = () => {
@@ -58,7 +71,7 @@ export function BookAppointment() {
     }
 
     try {
-      await bookAppointment(bookingSlot.id, reason);
+      await bookAppointment(bookingSlot.id, reason, selectedRecordIds);
       setBookingSlot(null);
       // Redirect to patient appointments tab
       router.push("/dashboard?tab=patient-appointments");
@@ -330,6 +343,35 @@ export function BookAppointment() {
                   className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
+
+              {myRecords && myRecords.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      Share Medical History
+                    </label>
+                    <button
+                      type="button"
+                      onClick={toggleSelectAll}
+                      className="text-xs font-semibold text-primary hover:underline"
+                    >
+                      {selectedRecordIds.length === myRecords.length ? "Deselect all" : "Select all"}
+                    </button>
+                  </div>
+                  <div className="max-h-32 overflow-y-auto space-y-1.5 border border-slate-100 rounded-lg p-2">
+                    {myRecords.map((record) => (
+                      <label key={record.id} className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedRecordIds.includes(record.id)}
+                          onChange={() => toggleRecord(record.id)}
+                        />
+                        {record.title}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                 <Button

@@ -54,6 +54,7 @@ export interface Appointment {
   updatedAt: string;
   doctorSlot?: Slot;
   slot?: Slot;
+  sharedRecords?: MedicalHistoryRecord[];
 }
 
 export interface Slot {
@@ -204,4 +205,29 @@ export interface LabAppointment {
   test?: Test;
   slot?: LabSlot;
   patient?: { id: string; fullName: string; email: string; phone: string | null };
+  sharedRecords?: MedicalHistoryRecord[];
+}
+
+export type RecordCategory =
+  | 'condition'
+  | 'allergy'
+  | 'medication'
+  | 'surgery'
+  | 'immunization'
+  | 'lab_result'
+  | 'other';
+
+export interface MedicalHistoryRecord {
+  id: string;
+  patientId: string;
+  category: RecordCategory;
+  title: string;
+  description: string | null;
+  recordDate: string | null;
+  status: 'unverified' | 'verified';
+  verifiedByUserId: string | null;
+  verifiedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  verifiedBy?: { id: string; fullName: string; role: UserRole } | null;
 }
