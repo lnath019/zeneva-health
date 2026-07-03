@@ -24,6 +24,7 @@ export function BookAppointment() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedHospital, setSelectedHospital] = useState("");
+  const [selectedSpecialisation, setSelectedSpecialisation] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
 
   const [bookingSlot, setBookingSlot] = useState<Slot | null>(null);
@@ -87,25 +88,40 @@ export function BookAppointment() {
     new Set(slots?.map((s: Slot) => s.hospital?.name).filter(Boolean)),
   ) as string[];
 
+  // Extract unique specialisation names for filter dropdown
+  const uniqueSpecialisations = Array.from(
+    new Set(
+      slots?.map((s: Slot) => s.doctor?.specialisation?.name).filter(Boolean),
+    ),
+  ) as string[];
+
   // Filter slots
   const filteredSlots = slots?.filter((slot: Slot) => {
     if (slot.status !== "active") return false;
 
-    // Doctor name match
+    // Doctor name, hospital, or speciality match
     const doctorName = slot.doctor?.user?.fullName || "";
+    const specialisationName = slot.doctor?.specialisation?.name || "";
+    const query = searchQuery.toLowerCase();
     const matchSearch =
-      doctorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      slot.hospital?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+      doctorName.toLowerCase().includes(query) ||
+      slot.hospital?.name?.toLowerCase().includes(query) ||
+      specialisationName.toLowerCase().includes(query);
 
     // Hospital match
     const matchHospital = selectedHospital
       ? slot.hospital?.name === selectedHospital
       : true;
 
+    // Speciality match
+    const matchSpecialisation = selectedSpecialisation
+      ? specialisationName === selectedSpecialisation
+      : true;
+
     // Date match
     const matchDate = selectedDate ? slot.slotDate === selectedDate : true;
 
-    return matchSearch && matchHospital && matchDate;
+    return matchSearch && matchHospital && matchSpecialisation && matchDate;
   });
 
   return (
@@ -121,13 +137,13 @@ export function BookAppointment() {
       </div>
 
       {/* Filter / Search Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
           <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-            Search Doctor or Hospital
+            Search Doctor, Hospital or Speciality
           </label>
           <Input
-            placeholder="Type name or hospital..."
+            placeholder="Type name, hospital or speciality..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -146,6 +162,24 @@ export function BookAppointment() {
             {uniqueHospitals.map((hName) => (
               <option key={hName} value={hName}>
                 {hName}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+            Filter by Speciality
+          </label>
+          <select
+            value={selectedSpecialisation}
+            onChange={(e) => setSelectedSpecialisation(e.target.value)}
+            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary h-[38px]"
+          >
+            <option value="">All Specialities</option>
+            {uniqueSpecialisations.map((sName) => (
+              <option key={sName} value={sName}>
+                {sName}
               </option>
             ))}
           </select>

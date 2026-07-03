@@ -161,7 +161,7 @@ export function DoctorAppointments() {
                           </div>
                         </td>
                         <td className="px-6 py-4 text-slate-400 text-xs">
-                          {new Date(appt.createdAt).toLocaleString()}
+\                          {new Date(appt.createdAt).toLocaleString()}
                         </td>
                       </tr>
                     ))}

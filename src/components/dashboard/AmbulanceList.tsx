@@ -1,14 +1,32 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useApi } from "@/hooks/useApi";
-import { ambulanceApi } from "@/lib/api";
+import { ambulanceApi, locationApi } from "@/lib/api";
 import { Spinner } from "../ui/Spinner";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
-import { Ambulance } from "@/types";
+import { Ambulance, District, Municipality, Province } from "@/types";
 import { cn } from "@/lib/utils";
+
+const SELECT_CLS =
+  "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50";
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+      {children}
+    </label>
+  );
+}
+
+function locationLabel(ambulance: Ambulance): string {
+  const m = ambulance.municipality;
+  if (!m) return ambulance.address || "—";
+  const parts = [m.name, m.district?.name, m.district?.province?.name].filter(Boolean);
+  return parts.join(", ");
+}
 
 const typeConfig: Record<
   string,
@@ -47,7 +65,16 @@ function getTypeConfig(type: string) {
   );
 }
 
-const EMPTY_FORM = { name: "", phone: "", district: "", type: "", notes: "" };
+const EMPTY_FORM = {
+  name: "",
+  phone: "",
+  provinceId: "",
+  districtId: "",
+  municipalityId: "",
+  address: "",
+  type: "",
+  notes: "",
+};
 
 export function AmbulanceList() {
   const { role } = useAuth();
@@ -58,6 +85,7 @@ export function AmbulanceList() {
     execute: fetchAmbulances,
     setData: setAmbulances,
   } = useApi(ambulanceApi.getAll);
+  const { data: locationTree, execute: fetchTree } = useApi(locationApi.getTree);
 
   const { isLoading: isSaving, execute: createAmbulance } = useApi(ambulanceApi.create);
   const { execute: updateAmbulance } = useApi(ambulanceApi.update);
@@ -73,7 +101,19 @@ export function AmbulanceList() {
     fetchAmbulances();
   }, [fetchAmbulances]);
 
+  // cascading options
+  const districts = useMemo<District[]>(() => {
+    if (!locationTree || !form.provinceId) return [];
+    return locationTree.find((p: Province) => p.id === form.provinceId)?.districts ?? [];
+  }, [locationTree, form.provinceId]);
+
+  const municipalities = useMemo<Municipality[]>(() => {
+    if (!form.districtId) return [];
+    return districts.find((d: District) => d.id === form.districtId)?.municipalities ?? [];
+  }, [districts, form.districtId]);
+
   const openCreateModal = () => {
+    fetchTree();
     setEditingId(null);
     setForm(EMPTY_FORM);
     setFormError(null);
@@ -81,11 +121,15 @@ export function AmbulanceList() {
   };
 
   const openEditModal = (ambulance: Ambulance) => {
+    fetchTree();
     setEditingId(ambulance.id);
     setForm({
       name: ambulance.name,
       phone: ambulance.phone,
-      district: ambulance.district,
+      provinceId: ambulance.municipality?.district?.province?.id ?? "",
+      districtId: ambulance.municipality?.district?.id ?? "",
+      municipalityId: ambulance.municipalityId ?? "",
+      address: ambulance.address ?? "",
       type: ambulance.type,
       notes: ambulance.notes ?? "",
     });
@@ -93,19 +137,34 @@ export function AmbulanceList() {
     setIsModalOpen(true);
   };
 
+  const handleProvinceChange = (id: string) => {
+    setForm((f) => ({ ...f, provinceId: id, districtId: "", municipalityId: "" }));
+  };
+
+  const handleDistrictChange = (id: string) => {
+    setForm((f) => ({ ...f, districtId: id, municipalityId: "" }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
-    if (!form.name.trim() || !form.phone.trim() || !form.district.trim() || !form.type.trim()) {
-      setFormError("Name, phone, district and type are all required.");
+    if (!form.name.trim() || !form.phone.trim() || !form.type.trim()) {
+      setFormError("Name, phone and type are all required.");
+      return;
+    }
+    if (!form.provinceId || !form.districtId || !form.municipalityId) {
+      setFormError("Please select a province, district, and municipality.");
       return;
     }
 
     const payload = {
       name: form.name.trim(),
       phone: form.phone.trim(),
-      district: form.district.trim(),
+      provinceId: form.provinceId,
+      districtId: form.districtId,
+      municipalityId: form.municipalityId,
+      address: form.address.trim() || undefined,
       type: form.type.trim(),
       notes: form.notes.trim() || undefined,
     };
@@ -197,7 +256,7 @@ export function AmbulanceList() {
                         {ambulance.name}
                       </h3>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        {ambulance.district}
+                        {locationLabel(ambulance)}
                       </p>
                     </div>
                   </div>
@@ -272,10 +331,10 @@ export function AmbulanceList() {
                     </span>
                   </div>
 
-                  {/* District */}
-                  <div className="flex items-center gap-3">
+                  {/* Location */}
+                  <div className="flex items-start gap-3">
                     <svg
-                      className="w-4 h-4 text-primary shrink-0"
+                      className="w-4 h-4 text-primary shrink-0 mt-0.5"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -293,7 +352,12 @@ export function AmbulanceList() {
                         d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                       />
                     </svg>
-                    <span className="text-slate-600">{ambulance.district}</span>
+                    <div>
+                      <span className="text-slate-600">{locationLabel(ambulance)}</span>
+                      {ambulance.address && ambulance.municipality && (
+                        <p className="text-xs text-slate-400 mt-0.5">{ambulance.address}</p>
+                      )}
+                    </div>
                   </div>
 
                   {/* Notes — only show if present */}
@@ -365,13 +429,65 @@ export function AmbulanceList() {
                 disabled={isSaving}
                 required
               />
+              {/* Province */}
+              <div>
+                <FieldLabel>Province</FieldLabel>
+                <select
+                  value={form.provinceId}
+                  onChange={(e) => handleProvinceChange(e.target.value)}
+                  className={SELECT_CLS}
+                  disabled={isSaving || !locationTree}
+                  required
+                >
+                  <option value="">
+                    {!locationTree ? "Loading provinces…" : "Select Province"}
+                  </option>
+                  {locationTree?.map((p: Province) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* District */}
+              <div>
+                <FieldLabel>District</FieldLabel>
+                <select
+                  value={form.districtId}
+                  onChange={(e) => handleDistrictChange(e.target.value)}
+                  className={SELECT_CLS}
+                  disabled={isSaving || !form.provinceId}
+                  required
+                >
+                  <option value="">{!form.provinceId ? "Select a province first" : "Select District"}</option>
+                  {districts.map((d: District) => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Municipality */}
+              <div>
+                <FieldLabel>Municipality / Local Body</FieldLabel>
+                <select
+                  value={form.municipalityId}
+                  onChange={(e) => setForm((f) => ({ ...f, municipalityId: e.target.value }))}
+                  className={SELECT_CLS}
+                  disabled={isSaving || !form.districtId}
+                  required
+                >
+                  <option value="">{!form.districtId ? "Select a district first" : "Select Municipality"}</option>
+                  {municipalities.map((m: Municipality) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+              </div>
+
               <Input
-                label="District"
-                value={form.district}
-                onChange={(e) => setForm((f) => ({ ...f, district: e.target.value }))}
-                placeholder="e.g. Kathmandu, or All Nepal"
+                label="Street / Base Address (optional)"
+                value={form.address}
+                onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+                placeholder="e.g. Sinamangal, Baneshwor"
                 disabled={isSaving}
-                required
               />
               <Input
                 label="Type"

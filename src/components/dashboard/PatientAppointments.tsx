@@ -1,14 +1,17 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApi } from '@/hooks/useApi';
 import { appointmentApi, slotApi } from '@/lib/api';
 import { Spinner } from '../ui/Spinner';
+import { Button } from '../ui/Button';
+import { AppointmentTicketModal } from './AppointmentTicketModal';
 import { Appointment, Slot } from '@/types';
 
 export function PatientAppointments() {
   const { data: appointments, isLoading: isApptsLoading, error: apptsError, execute: fetchAppointments } = useApi(appointmentApi.getMyAppointments);
   const { data: slots, execute: fetchSlots } = useApi(slotApi.getAll);
+  const [ticketAppointmentId, setTicketAppointmentId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAppointments();
@@ -117,14 +120,31 @@ export function PatientAppointments() {
                   </div>
                 </div>
 
-                <div className="md:text-right border-t md:border-t-0 border-slate-50 pt-4 md:pt-0 max-w-sm">
-                  <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Reason for Visit</span>
-                  <p className="text-slate-700 text-sm italic">&ldquo;{appt.reason}&rdquo;</p>
+                <div className="md:text-right border-t md:border-t-0 border-slate-50 pt-4 md:pt-0 max-w-sm space-y-3">
+                  <div>
+                    <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Reason for Visit</span>
+                    <p className="text-slate-700 text-sm italic">&ldquo;{appt.reason}&rdquo;</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTicketAppointmentId(appt.id)}
+                  >
+                    View / Download Ticket
+                  </Button>
                 </div>
               </div>
             );
           })}
         </div>
+      )}
+
+      {ticketAppointmentId && (
+        <AppointmentTicketModal
+          appointmentId={ticketAppointmentId}
+          onClose={() => setTicketAppointmentId(null)}
+        />
       )}
     </div>
   );

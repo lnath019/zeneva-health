@@ -1,4 +1,4 @@
-import { Hospital, Ambulance, Slot, Appointment, Specialisation, User, UserProfile, Province, Lab, LabSlot, LabAppointment, Test, MedicalHistoryRecord, RecordCategory } from '@/types';
+import { Hospital, Ambulance, Slot, Appointment, AppointmentTicket, Specialisation, User, UserProfile, Province, Lab, LabSlot, LabAppointment, Test, MedicalHistoryRecord, RecordCategory } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.zenivahealthcare.com/api';
 
@@ -135,16 +135,39 @@ export const locationApi = {
 };
 
 export const ambulanceApi = {
-  getAll: async () => {
-    return apiRequest<Ambulance[]>('/ambulances');
+  getAll: async (filters?: { provinceId?: string; districtId?: string; municipalityId?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.provinceId) params.set('provinceId', filters.provinceId);
+    if (filters?.districtId) params.set('districtId', filters.districtId);
+    if (filters?.municipalityId) params.set('municipalityId', filters.municipalityId);
+    const qs = params.toString();
+    return apiRequest<Ambulance[]>(`/ambulances${qs ? `?${qs}` : ''}`);
   },
-  create: async (data: { name: string; phone: string; district: string; type: string; notes?: string }) => {
+  create: async (data: {
+    name: string;
+    phone: string;
+    provinceId: string;
+    districtId: string;
+    municipalityId: string;
+    address?: string;
+    type: string;
+    notes?: string;
+  }) => {
     return apiRequest<{ message: string; ambulance: Ambulance }>('/ambulances', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
-  update: async (id: string, data: Partial<{ name: string; phone: string; district: string; type: string; notes: string }>) => {
+  update: async (id: string, data: Partial<{
+    name: string;
+    phone: string;
+    provinceId: string;
+    districtId: string;
+    municipalityId: string;
+    address: string;
+    type: string;
+    notes: string;
+  }>) => {
     return apiRequest<{ message: string; ambulance: Ambulance }>(`/ambulances/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
@@ -196,6 +219,9 @@ export const appointmentApi = {
   },
   getBySlot: async (doctorSlotId: string) => {
     return apiRequest<Appointment[]>(`/appointments/slot/${doctorSlotId}`);
+  },
+  getTicket: async (appointmentId: string) => {
+    return apiRequest<AppointmentTicket>(`/appointments/${appointmentId}/ticket`);
   },
   updateStatus: async (appointmentId: string, status: Appointment['status']) => {
     return apiRequest<Appointment>(`/appointments/${appointmentId}/status`, {

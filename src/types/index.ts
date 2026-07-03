@@ -43,18 +43,35 @@ export interface Doctor {
   specialisation?: Specialisation | null;
 }
 
+export type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'needs_reschedule';
+
 export interface Appointment {
   id: string;
   patientId: string;
   doctorSlotId: string;
   tokenNumber:number;
   reason: string;
-  status: 'pending' | 'confirmed' | 'cancelled';
+  status: AppointmentStatus;
   createdAt: string;
   updatedAt: string;
   doctorSlot?: Slot;
   slot?: Slot;
   sharedRecords?: MedicalHistoryRecord[];
+}
+
+export interface AppointmentTicket {
+  id: string;
+  tokenNumber: number;
+  status: AppointmentStatus;
+  bookedAt: string;
+  patientName: string;
+  doctorName: string;
+  specialisation: string | null;
+  hospitalName: string | null;
+  hospitalAddress: string | null;
+  slotDate: string | null;
+  startTime: string | null;
+  endTime: string | null;
 }
 
 export interface Slot {
@@ -130,10 +147,21 @@ export interface Ambulance {
   id: string;
   name: string;
   phone: string;
-  district: string;
+  municipalityId: string | null;
+  address: string | null;
   type: string;
   notes?: string;
   createdAt: string;
+  municipality?: {
+    id: string;
+    name: string;
+    type: MunicipalityType;
+    district: {
+      id: string;
+      name: string;
+      province: { id: string; name: string };
+    };
+  } | null;
 }
 
 export interface Test {
