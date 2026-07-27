@@ -288,13 +288,14 @@ function HowItWorksSection() {
     <section className="py-20 bg-tertiary">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeader eyebrow="Simple by design" title="How It Works" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-8 relative">
+          <div className="hidden md:block absolute top-10 left-0 right-0 h-0.5 bg-slate-200" style={{ marginLeft: '16.6%', marginRight: '16.6%' }} />
           {HOW_IT_WORKS.map((item) => (
-            <div key={item.step} className="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm text-center">
-              <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary text-white text-lg font-extrabold mb-5">
+            <div key={item.step} className="relative bg-white rounded-2xl p-8 border border-slate-100 shadow-sm text-center">
+              <span className="relative z-10 inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary text-white text-3xl font-extrabold mb-6 shadow-md shadow-primary/20">
                 {item.step}
               </span>
-              <h3 className="text-base font-bold text-slate-800">{item.title}</h3>
+              <h3 className="text-lg font-bold text-slate-800">{item.title}</h3>
               <p className="mt-2 text-sm text-slate-500 leading-relaxed">{item.description}</p>
             </div>
           ))}
@@ -303,7 +304,6 @@ function HowItWorksSection() {
     </section>
   );
 }
-
 function PartnerHospitalsSection() {
   const { data: hospitals, isLoading, error, execute: fetchHospitals } = useApi(hospitalApi.getAll);
 
