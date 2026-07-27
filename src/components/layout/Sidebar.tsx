@@ -266,14 +266,14 @@ export function Sidebar() {
                 key={item.id}
                 onClick={() => router.push(item.path)}
                 className={cn(
-                  'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-150',
+                  'flex items-start gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-150 text-left',
                   isActive
                     ? 'bg-primary text-white shadow-md shadow-primary/10'
                     : 'text-neutralBrand hover:bg-slate-50 hover:text-slate-900'
                 )}
               >
-                {item.icon}
-                {item.label}
+                <span className="flex-shrink-0 mt-0.5">{item.icon}</span>
+                <span className="leading-snug">{item.label}</span>
               </button>
             );
           })}

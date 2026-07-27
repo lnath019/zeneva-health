@@ -339,18 +339,31 @@ function PartnerHospitalsSection() {
             {visible.map((hospital: Hospital) => (
               <div
                 key={hospital.id}
-                className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow"
+                className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col"
               >
                 <h3 className="text-base font-bold text-slate-800">{hospital.name}</h3>
-                <p className="mt-2 text-sm text-slate-500 leading-relaxed">{hospital.address}</p>
-                <p className="mt-3 text-xs font-semibold text-primary">{hospital.phone}</p>
+                <p className="mt-2 text-sm text-slate-500">
+                  {hospital.municipality?.name ?? "City not listed"}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-primary">
+                  {hospital.phone ?? "Phone not listed"}
+                </p>
+                <Link
+                  href="/health-directory"
+                  className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:text-primary-hover"
+                >
+                  View details &rarr;
+                </Link>
               </div>
             ))}
           </div>
         )}
 
         <div className="text-center mt-10">
-          <Link href="/health-directory" className="text-sm font-semibold text-primary hover:text-primary-hover">
+          <Link
+            href="/health-directory"
+            className="inline-flex items-center justify-center px-8 py-4 rounded-xl bg-primary text-white text-base font-bold shadow-md shadow-primary/20 hover:bg-primary-hover hover:shadow-lg transition-all"
+          >
             View all hospitals &rarr;
           </Link>
         </div>
