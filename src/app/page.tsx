@@ -212,7 +212,7 @@ function HeroSection() {
               <Button size="lg" variant="outline">Book Diagnostics</Button>
             </Link>
             <Link href="/buy-medicines">
-              <Button size="lg" variant="ghost">Buy Medicines</Button>
+              <Button size="lg" variant="outline">Buy Medicines</Button>
             </Link>
           </div>
 
