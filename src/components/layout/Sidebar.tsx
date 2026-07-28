@@ -254,7 +254,7 @@ export function Sidebar() {
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white font-extrabold text-lg shadow-md shadow-primary/20">
             Z
           </div>
-          <span className="text-xl font-bold text-primary tracking-wide">ZENEVA</span>
+          <span className="text-xl font-bold text-primary tracking-wide">ZENIVA</span>
         </div>
 
         {/* Navigation list */}

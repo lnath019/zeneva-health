@@ -123,13 +123,13 @@ export default function LoginPage() {
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-lg font-bold text-white">
           Z
         </div>
-        <span className="text-xl font-bold tracking-wide text-primary">ZENEVA</span>
+        <span className="text-xl font-bold tracking-wide text-primary">ZENIVA</span>
       </div>
 
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl shadow-slate-200/50">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold tracking-tight text-slate-800">
-            {step === 'otp' ? 'Verify access' : 'Welcome to Zeneva'}
+            {step === 'otp' ? 'Verify access' : 'Welcome to Zeniva'}
           </h1>
           <p className="mt-2 text-sm text-neutralBrand">
             {step === 'otp'

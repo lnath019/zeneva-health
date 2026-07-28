@@ -12,6 +12,8 @@ const COLOR_FIELDS: { key: ThemeColorKey; label: string; hint: string }[] = [
 ];
 
 export function ThemeSwitcher() {
+  if (process.env.NODE_ENV === 'production') return null;
+
   const { theme, setColor, applyPreset, resetTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);

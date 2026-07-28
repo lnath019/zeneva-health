@@ -16,7 +16,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Zeneva - Medical Booking Portal",
+  title: "Zeniva - Medical Booking Portal",
   description: "Book appointments, manage slots, locate hospitals and request ambulances.",
 };
 

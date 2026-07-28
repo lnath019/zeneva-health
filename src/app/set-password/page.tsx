@@ -57,7 +57,7 @@ export default function SetPasswordPage() {
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-lg font-bold text-white">
           Z
         </div>
-        <span className="text-xl font-bold tracking-wide text-primary">ZENEVA</span>
+        <span className="text-xl font-bold tracking-wide text-primary">ZENIVA</span>
       </div>
 
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl shadow-slate-200/50">

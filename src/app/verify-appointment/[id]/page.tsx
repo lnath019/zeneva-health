@@ -24,7 +24,7 @@ export default function VerifyAppointmentPage({ params }: { params: { id: string
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="max-w-sm w-full bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="px-6 py-4 bg-primary text-white">
-          <h1 className="text-lg font-bold">Zeneva Healthcare</h1>
+          <h1 className="text-lg font-bold">Zeniva Healthcare</h1>
           <p className="text-xs opacity-80 mt-0.5">Appointment Verification</p>
         </div>
 

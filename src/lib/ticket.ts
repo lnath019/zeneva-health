@@ -28,7 +28,7 @@ export async function downloadTicketPdf(ticket: AppointmentTicket): Promise<void
   doc.rect(0, 0, pageWidth, 70, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(16);
-  doc.text('Zeneva Healthcare', 24, 32);
+  doc.text('Zeniva Healthcare', 24, 32);
   doc.setFontSize(10);
   doc.text('Appointment Ticket', 24, 50);
 

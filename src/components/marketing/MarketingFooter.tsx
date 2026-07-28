@@ -56,7 +56,7 @@ export function MarketingFooter() {
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white font-extrabold text-lg">
               Z
             </div>
-            <span className="text-xl font-bold text-white tracking-wide">ZENEVA</span>
+            <span className="text-xl font-bold text-white tracking-wide">ZENIVA</span>
           </div>
           <p className="text-sm text-slate-400 leading-relaxed">
             Nepal&apos;s complete health facilitator &mdash; doctors, diagnostics, medicines, and emergency
@@ -113,8 +113,8 @@ export function MarketingFooter() {
               </a>
             </li>
             <li>
-              <a href="mailto:support@zeneva.com" className="hover:text-white transition-colors">
-                support@zeneva.com
+              <a href="mailto:support@ZENIVA.com" className="hover:text-white transition-colors">
+                support@ZENIVA.com
               </a>
             </li>
             <li className="text-slate-400">Kathmandu, Nepal</li>
@@ -124,7 +124,7 @@ export function MarketingFooter() {
 
       <div className="border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 text-xs text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-2">
-          <span>&copy; {new Date().getFullYear()} Zeneva Health Care. All rights reserved.</span>
+          <span>&copy; {new Date().getFullYear()} Zeniva Health Care. All rights reserved.</span>
           <span>Made for a healthier Nepal.</span>
         </div>
       </div>
