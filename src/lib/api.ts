@@ -402,6 +402,8 @@ export interface BackendCartItem {
   id: string;
   userId: string;
   productId: string;
+  productName: string;
+  unitPrice: number;
   quantity: number;
 }
 
@@ -409,10 +411,10 @@ export const cartApi = {
   getAll: async () => {
     return apiRequest<{ items: BackendCartItem[] }>('/cart');
   },
-  add: async (productId: string, quantity: number = 1) => {
+  add: async (productId: string, productName: string, unitPrice: number, quantity: number = 1) => {
     return apiRequest<{ message: string; item: BackendCartItem }>('/cart', {
       method: 'POST',
-      body: JSON.stringify({ productId, quantity }),
+      body: JSON.stringify({ productId, productName, unitPrice, quantity }),
     });
   },
   updateQuantity: async (productId: string, quantity: number) => {
@@ -431,10 +433,67 @@ export const cartApi = {
       method: 'DELETE',
     });
   },
-  sync: async (items: { productId: string; quantity: number }[]) => {
+  sync: async (items: { productId: string; productName: string; unitPrice: number; quantity: number }[]) => {
     return apiRequest<{ message: string; items: BackendCartItem[] }>('/cart/sync', {
       method: 'POST',
       body: JSON.stringify({ items }),
     });
+  },
+};
+
+export interface BackendAddress {
+  id: string;
+  userId: string;
+  fullName: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  district: string;
+  latitude?: number;
+  longitude?: number;
+  isDefault: boolean;
+}
+
+export const addressApi = {
+  getAll: async () => {
+    return apiRequest<{ addresses: BackendAddress[] }>('/addresses');
+  },
+  create: async (data: Omit<BackendAddress, 'id' | 'userId' | 'isDefault'> & { isDefault?: boolean }) => {
+    return apiRequest<{ message: string; address: BackendAddress }>('/addresses', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+};
+
+export interface BackendOrder {
+  id: string;
+  userId: string;
+  addressId: string;
+  status: string;
+  paymentMethod: string;
+  paymentStatus: string;
+  subtotal: number;
+  discount: number;
+  deliveryCharge: number;
+  grandTotal: number;
+  rewardPoints: number;
+  items: { productId: string; productName: string; unitPrice: number; quantity: number }[];
+  address: BackendAddress;
+}
+
+export const orderApi = {
+  create: async (addressId: string, paymentMethod: 'cod' | 'esewa' | 'card') => {
+    return apiRequest<{ message: string; order: BackendOrder }>('/orders', {
+      method: 'POST',
+      body: JSON.stringify({ addressId, paymentMethod }),
+    });
+  },
+  getAll: async () => {
+    return apiRequest<{ orders: BackendOrder[] }>('/orders');
+  },
+  getById: async (id: string) => {
+    return apiRequest<{ order: BackendOrder }>(`/orders/${id}`);
   },
 };

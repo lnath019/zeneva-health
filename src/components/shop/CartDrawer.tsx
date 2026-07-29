@@ -11,7 +11,6 @@ export function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () =
   const { token } = useAuth();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const [checkoutMessage, setCheckoutMessage] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -20,13 +19,12 @@ export function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () =
   if (!isOpen || !mounted) return null;
 
   function handleCheckout() {
+    onClose();
     if (!token) {
-      onClose();
-      router.push("/login?redirect=/buy-medicines");
+      router.push("/login?redirect=/checkout");
       return;
     }
-    setCheckoutMessage(true);
-    setTimeout(() => setCheckoutMessage(false), 3000);
+    router.push("/checkout");
   }
 
   return createPortal(
@@ -104,12 +102,6 @@ export function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () =
               <span className="text-sm font-semibold text-slate-600">Subtotal</span>
               <span className="text-lg font-extrabold text-slate-900">Rs. {totalPrice}</span>
             </div>
-
-            {checkoutMessage && (
-              <p className="text-center text-sm font-semibold text-secondary bg-secondary/10 rounded-lg py-2">
-                Checkout is coming soon!
-              </p>
-            )}
 
             <button
               onClick={handleCheckout}

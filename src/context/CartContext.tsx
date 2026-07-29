@@ -63,7 +63,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       try {
         const localItems = itemsRef.current;
         if (localItems.length > 0) {
-          await cartApi.sync(localItems.map((i) => ({ productId: i.product.id, quantity: i.quantity })));
+          await cartApi.sync(
+            localItems.map((i) => ({
+              productId: i.product.id,
+              productName: i.product.name,
+              unitPrice: i.product.price,
+              quantity: i.quantity,
+            }))
+          );
         }
         const { items: backendItems } = await cartApi.getAll();
         setItems(toCartItems(backendItems));
@@ -86,7 +93,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (token) {
-        cartApi.add(product.id, 1).catch((error) => console.error("Failed to add cart item on server:", error));
+        cartApi
+          .add(product.id, product.name, product.price, 1)
+          .catch((error) => console.error("Failed to add cart item on server:", error));
       }
     },
     [token]
