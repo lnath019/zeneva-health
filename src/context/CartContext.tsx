@@ -1,7 +1,9 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
-import { Product } from "@/data/products";
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { Product, PRODUCTS } from "@/data/products";
+import { useAuth } from "@/context/AuthContext";
+import { cartApi, BackendCartItem } from "@/lib/api";
 
 export interface CartItem {
   product: Product;
@@ -20,36 +22,114 @@ interface CartContextValue {
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
+function findProduct(productId: string): Product | undefined {
+  return PRODUCTS.find((p) => p.id === productId);
+}
+
+function toCartItems(backendItems: BackendCartItem[]): CartItem[] {
+  return backendItems
+    .map((bi) => {
+      const product = findProduct(bi.productId);
+      return product ? { product, quantity: bi.quantity } : null;
+    })
+    .filter((item): item is CartItem => item !== null);
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { token } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
 
-  const addToCart = useCallback((product: Product) => {
-    setItems((prev) => {
-      const existing = prev.find((item) => item.product.id === product.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        );
-      }
-      return [...prev, { product, quantity: 1 }];
-    });
-  }, []);
+  const itemsRef = useRef<CartItem[]>(items);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
-  const removeFromCart = useCallback((productId: string) => {
-    setItems((prev) => prev.filter((item) => item.product.id !== productId));
-  }, []);
+  const syncedTokenRef = useRef<string | null>(null);
 
-  const updateQuantity = useCallback((productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      setItems((prev) => prev.filter((item) => item.product.id !== productId));
+  // When a token appears (login, or already logged in on page load):
+  // push any local (anonymous) items to the backend, then load the
+  // backend cart as the source of truth.
+  useEffect(() => {
+    if (!token) {
+      syncedTokenRef.current = null;
+      setItems([]);
       return;
     }
-    setItems((prev) =>
-      prev.map((item) => (item.product.id === productId ? { ...item, quantity } : item))
-    );
-  }, []);
 
-  const clearCart = useCallback(() => setItems([]), []);
+    if (syncedTokenRef.current === token) return;
+    syncedTokenRef.current = token;
+
+    (async () => {
+      try {
+        const localItems = itemsRef.current;
+        if (localItems.length > 0) {
+          await cartApi.sync(localItems.map((i) => ({ productId: i.product.id, quantity: i.quantity })));
+        }
+        const { items: backendItems } = await cartApi.getAll();
+        setItems(toCartItems(backendItems));
+      } catch (error) {
+        console.error("Cart sync/load failed:", error);
+      }
+    })();
+  }, [token]);
+
+  const addToCart = useCallback(
+    (product: Product) => {
+      setItems((prev) => {
+        const existing = prev.find((item) => item.product.id === product.id);
+        if (existing) {
+          return prev.map((item) =>
+            item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          );
+        }
+        return [...prev, { product, quantity: 1 }];
+      });
+
+      if (token) {
+        cartApi.add(product.id, 1).catch((error) => console.error("Failed to add cart item on server:", error));
+      }
+    },
+    [token]
+  );
+
+  const removeFromCart = useCallback(
+    (productId: string) => {
+      setItems((prev) => prev.filter((item) => item.product.id !== productId));
+
+      if (token) {
+        cartApi.remove(productId).catch((error) => console.error("Failed to remove cart item on server:", error));
+      }
+    },
+    [token]
+  );
+
+  const updateQuantity = useCallback(
+    (productId: string, quantity: number) => {
+      if (quantity <= 0) {
+        removeFromCart(productId);
+        return;
+      }
+
+      setItems((prev) =>
+        prev.map((item) => (item.product.id === productId ? { ...item, quantity } : item))
+      );
+
+      if (token) {
+        cartApi
+          .updateQuantity(productId, quantity)
+          .catch((error) => console.error("Failed to update cart item on server:", error));
+      }
+    },
+    [token, removeFromCart]
+  );
+
+  const clearCart = useCallback(() => {
+    setItems([]);
+
+    if (token) {
+      cartApi.clear().catch((error) => console.error("Failed to clear cart on server:", error));
+    }
+  }, [token]);
 
   const totalItems = useMemo(() => items.reduce((sum, item) => sum + item.quantity, 0), [items]);
   const totalPrice = useMemo(

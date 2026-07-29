@@ -27,6 +27,8 @@ export function MarketingHeader() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const { totalItems } = useCart();
 
+  const loginHref = `/login?redirect=${encodeURIComponent(pathname || '/')}`;
+
   return (
     <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -76,7 +78,7 @@ export function MarketingHeader() {
               <Button size="sm">Go to Dashboard</Button>
             </Link>
           ) : (
-            <Link href="/login">
+            <Link href={loginHref}>
               <Button size="sm">Login / Sign Up</Button>
             </Link>
           )}
@@ -121,7 +123,7 @@ export function MarketingHeader() {
                 <Button size="sm" className="w-full">Go to Dashboard</Button>
               </Link>
             ) : (
-              <Link href="/login" className="block">
+              <Link href={loginHref} className="block">
                 <Button size="sm" className="w-full">Login / Sign Up</Button>
               </Link>
             )}

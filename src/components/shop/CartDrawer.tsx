@@ -2,17 +2,32 @@
 
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 
 export function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { items, updateQuantity, removeFromCart, totalPrice, clearCart } = useCart();
+  const { token } = useAuth();
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [checkoutMessage, setCheckoutMessage] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   if (!isOpen || !mounted) return null;
+
+  function handleCheckout() {
+    if (!token) {
+      onClose();
+      router.push("/login?redirect=/buy-medicines");
+      return;
+    }
+    setCheckoutMessage(true);
+    setTimeout(() => setCheckoutMessage(false), 3000);
+  }
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex justify-end">
@@ -89,6 +104,19 @@ export function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () =
               <span className="text-sm font-semibold text-slate-600">Subtotal</span>
               <span className="text-lg font-extrabold text-slate-900">Rs. {totalPrice}</span>
             </div>
+
+            {checkoutMessage && (
+              <p className="text-center text-sm font-semibold text-secondary bg-secondary/10 rounded-lg py-2">
+                Checkout is coming soon!
+              </p>
+            )}
+
+            <button
+              onClick={handleCheckout}
+              className="w-full py-3 rounded-lg bg-primary text-white text-sm font-bold hover:bg-primary-hover transition-colors shadow-sm shadow-primary/20"
+            >
+              Checkout
+            </button>
             <button
               onClick={clearCart}
               className="w-full py-2 text-sm font-semibold text-slate-500 hover:text-red-500 transition-colors"

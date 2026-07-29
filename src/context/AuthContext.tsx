@@ -12,8 +12,8 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   requestOtp: (email: string) => Promise<void>;
-  verifyOtp: (email: string, code: string) => Promise<void>;
-  loginWithPassword: (email: string, password: string) => Promise<void>;
+  verifyOtp: (email: string, code: string, redirectTo?: string) => Promise<void>;
+  loginWithPassword: (email: string, password: string, redirectTo?: string) => Promise<void>;
   setPassword: (password: string) => Promise<void>;
   signOut: () => void;
 }
@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return decoded;
   };
 
-  const verifyOtp = async (email: string, code: string) => {
+  const verifyOtp = async (email: string, code: string, redirectTo?: string) => {
     setIsLoading(true);
     try {
       const response = await authApi.verifyOtp(email, code);
@@ -71,13 +71,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       applyAccessToken(response.accessToken);
-      router.push(response.requiresPasswordSetup ? '/set-password' : '/dashboard');
+      router.push(response.requiresPasswordSetup ? '/set-password' : (redirectTo || '/dashboard'));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const loginWithPassword = async (email: string, password: string) => {
+  const loginWithPassword = async (email: string, password: string, redirectTo?: string) => {
     setIsLoading(true);
     try {
       const response = await authApi.login(email, password);
@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       applyAccessToken(response.accessToken);
-      router.push('/dashboard');
+      router.push(redirectTo || '/dashboard');
     } finally {
       setIsLoading(false);
     }

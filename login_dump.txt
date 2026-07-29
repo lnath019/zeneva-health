@@ -1,18 +1,15 @@
-'use client'
+﻿'use client'
 
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 
 const OTP_LENGTH = 6
 
-function LoginForm() {
+export default function LoginPage() {
   const { requestOtp, verifyOtp, loginWithPassword } = useAuth()
-  const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirect') || undefined
 
   const [mode, setMode] = useState<'otp' | 'password'>('otp')
   const [email, setEmail] = useState('')
@@ -66,7 +63,7 @@ function LoginForm() {
 
     setLoading(true)
     try {
-      await loginWithPassword(email, password, redirectTo)
+      await loginWithPassword(email, password)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Invalid email or password.')
     } finally {
@@ -82,9 +79,10 @@ function LoginForm() {
       setError('Enter all 6 digits.')
       return
     }
+
     setLoading(true)
     try {
-      await verifyOtp(email, code, redirectTo)
+      await verifyOtp(email, code)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'That code is invalid or expired.')
     } finally {
@@ -95,11 +93,13 @@ function LoginForm() {
   function updateDigit(index: number, value: string) {
     const digit = value.replace(/\D/g, '').slice(-1)
     if (value && !digit) return
+
     setOtp((prev) => {
       const next = [...prev]
       next[index] = digit
       return next
     })
+
     if (digit && index < OTP_LENGTH - 1) {
       inputs.current[index + 1]?.focus()
     }
@@ -125,9 +125,10 @@ function LoginForm() {
         </div>
         <span className="text-xl font-bold tracking-wide text-primary">ZENIVA</span>
       </div>
+
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl shadow-slate-200/50">
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-slate-900">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-800">
             {step === 'otp' ? 'Verify access' : 'Welcome to Zeniva'}
           </h1>
           <p className="mt-2 text-sm text-neutralBrand">
@@ -163,7 +164,7 @@ function LoginForm() {
         )}
 
         {error && (
-          <p className="mb-6 rounded-lg border p-3 text-sm font-medium text-red-600">
+          <p className="mb-6 rounded-lg border  p-3 text-sm font-medium text-red-600">
             {error}
           </p>
         )}
@@ -188,7 +189,7 @@ function LoginForm() {
             <Input
               label="Password"
               type="password"
-              placeholder="********"
+              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
@@ -257,13 +258,5 @@ function LoginForm() {
         )}
       </div>
     </div>
-  )
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={null}>
-      <LoginForm />
-    </Suspense>
   )
 }

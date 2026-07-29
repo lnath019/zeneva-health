@@ -397,3 +397,44 @@ export const medicalHistoryApi = {
   },
 };
 
+
+export interface BackendCartItem {
+  id: string;
+  userId: string;
+  productId: string;
+  quantity: number;
+}
+
+export const cartApi = {
+  getAll: async () => {
+    return apiRequest<{ items: BackendCartItem[] }>('/cart');
+  },
+  add: async (productId: string, quantity: number = 1) => {
+    return apiRequest<{ message: string; item: BackendCartItem }>('/cart', {
+      method: 'POST',
+      body: JSON.stringify({ productId, quantity }),
+    });
+  },
+  updateQuantity: async (productId: string, quantity: number) => {
+    return apiRequest<{ message: string; item: BackendCartItem }>(`/cart/${productId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ quantity }),
+    });
+  },
+  remove: async (productId: string) => {
+    return apiRequest<{ message: string }>(`/cart/${productId}`, {
+      method: 'DELETE',
+    });
+  },
+  clear: async () => {
+    return apiRequest<{ message: string }>('/cart', {
+      method: 'DELETE',
+    });
+  },
+  sync: async (items: { productId: string; quantity: number }[]) => {
+    return apiRequest<{ message: string; items: BackendCartItem[] }>('/cart/sync', {
+      method: 'POST',
+      body: JSON.stringify({ items }),
+    });
+  },
+};
