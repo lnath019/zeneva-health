@@ -109,7 +109,7 @@ export default function CheckoutPage() {
             </div>
             <h1 className="text-2xl font-extrabold text-slate-900 mb-2">Order placed!</h1>
             <p className="text-slate-500 mb-8">
-              Your order has been placed successfully. We'll notify you once it's on its way.
+              Your order has been placed successfully. We&apos;ll notify you once it&apos;s on its way.
             </p>
             <button
               onClick={() => router.push("/buy-medicines")}
