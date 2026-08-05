@@ -290,9 +290,14 @@ function HowItWorksSection() {
         <SectionHeader eyebrow="Simple by design" title="How It Works" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-8 relative">
           <div className="hidden md:block absolute top-10 left-0 right-0 h-0.5 bg-slate-200" style={{ marginLeft: '16.6%', marginRight: '16.6%' }} />
-          {HOW_IT_WORKS.map((item) => (
+          {HOW_IT_WORKS.map((item, index) => (
             <div key={item.step} className="relative bg-white rounded-2xl p-8 border border-slate-100 shadow-sm text-center">
-              <span className="relative z-10 inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary text-white text-3xl font-extrabold mb-6 shadow-md shadow-primary/20">
+              <span
+                className={cn(
+                  'relative z-10 inline-flex items-center justify-center w-20 h-20 rounded-full text-white text-3xl font-extrabold mb-6 shadow-md',
+                  index % 2 === 0 ? 'bg-primary shadow-primary/20' : 'bg-secondary shadow-secondary/20'
+                )}
+              >
                 {item.step}
               </span>
               <h3 className="text-lg font-bold text-slate-800">{item.title}</h3>
@@ -420,20 +425,20 @@ function TestimonialsSection() {
 
 function ContactCtaSection() {
   return (
-    <section className="py-16 bg-primary">
+    <section className="py-16 bg-secondary">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center justify-between gap-8 text-center lg:text-left">
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
             Need help or have a question?
           </h2>
-          <p className="mt-2 text-primary-light/90">
+          <p className="mt-2 text-secondary-light/90">
             Our support team is available around the clock for emergencies and general inquiries.
           </p>
         </div>
         <div className="flex flex-wrap justify-center gap-3">
           <a
             href="tel:+97714440000"
-            className="inline-flex items-center justify-center px-6 py-3 text-lg rounded-lg font-medium bg-white text-primary hover:bg-slate-100 transition-colors"
+            className="inline-flex items-center justify-center px-6 py-3 text-lg rounded-lg font-medium bg-white text-secondary hover:bg-slate-100 transition-colors"
           >
             Call +977-1-4440000
           </a>
