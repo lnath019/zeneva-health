@@ -261,11 +261,12 @@ export function Sidebar() {
     <aside className="w-64 bg-white border-r border-slate-200 h-screen sticky top-0 flex flex-col justify-between shrink-0">
       <div className="flex flex-col gap-6 p-6">
         {/* Brand */}
-        <div className="flex items-center gap-2 select-none">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white font-extrabold text-lg shadow-md shadow-primary/20">
-            Z
-          </div>
-          <span className="text-xl font-bold text-primary tracking-wide">ZENIVA</span>
+        <div className="flex items-center select-none">
+          <img
+            src="/zeniva-logo.png"
+            alt="Zeniva Healthcare"
+            className="h-10 w-auto"
+          />
         </div>
 
         {/* Navigation list */}
@@ -279,7 +280,13 @@ export function Sidebar() {
                 className={cn(
                   'flex items-start gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-150 text-left',
                   isActive
-                    ? 'bg-primary text-white shadow-md shadow-primary/10'
+                    ? cn(
+                        'text-white shadow-md',
+                        role === 'doctor' && 'bg-secondary shadow-secondary/10',
+                        role === 'admin' && 'bg-red-500 shadow-red-500/10',
+                        role === 'lab' && 'bg-amber-500 shadow-amber-500/10',
+                        role === 'patient' && 'bg-primary shadow-primary/10'
+                      )
                     : 'text-neutralBrand hover:bg-slate-50 hover:text-slate-900'
                 )}
               >
@@ -309,3 +316,6 @@ export function Sidebar() {
     </aside>
   );
 }
+
+
+
