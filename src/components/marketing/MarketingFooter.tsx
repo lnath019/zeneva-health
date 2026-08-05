@@ -52,11 +52,12 @@ export function MarketingFooter() {
     <footer className="bg-slate-900 text-slate-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
         <div>
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white font-extrabold text-lg">
-              Z
-            </div>
-            <span className="text-xl font-bold text-white tracking-wide">ZENIVA</span>
+         <div className="flex items-center mb-4">
+            <img
+              src="/zeniva-logo.png"
+              alt="Zeniva Healthcare"
+              className="h-16 w-auto brightness-0 invert"
+            />
           </div>
           <p className="text-sm text-slate-400 leading-relaxed">
             Nepal&apos;s complete health facilitator &mdash; doctors, diagnostics, medicines, and emergency

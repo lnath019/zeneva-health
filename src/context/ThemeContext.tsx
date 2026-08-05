@@ -12,8 +12,8 @@ export interface ThemeColors {
 }
 
 export const DEFAULT_THEME: ThemeColors = {
-  primary: '#16A34A',
-  secondary: '#EA580C',
+  primary: '#F07818',
+  secondary: '#1CA3C0',
   tertiary: '#F4F4F5',
 };
 
@@ -23,7 +23,7 @@ export interface ThemePreset {
 }
 
 export const THEME_PRESETS: ThemePreset[] = [
-  { name: 'Emerald & Amber', colors: { primary: '#16A34A', secondary: '#EA580C', tertiary: '#F4F4F5' } },
+  { name: 'Zeniva Brand', colors: { primary: '#F07818', secondary: '#1CA3C0', tertiary: '#F4F4F5' } },
   { name: 'Violet & Lime', colors: { primary: '#7C3AED', secondary: '#84CC16', tertiary: '#F5F3FF' } },
   { name: 'Rose & Slate', colors: { primary: '#E11D48', secondary: '#475569', tertiary: '#FDF2F4' } },
   { name: 'Forest & Gold', colors: { primary: '#15803D', secondary: '#CA8A04', tertiary: '#F4F8F4' } },
