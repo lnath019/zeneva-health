@@ -7,8 +7,11 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Spinner } from '../ui/Spinner';
 import { User, Specialisation } from '@/types';
+import { useRoleAccent } from '@/hooks/useRoleAccent';
+import { cn } from '@/lib/utils';
 
 export function ManageUsers() {
+  const accent = useRoleAccent();
   const { data: users, isLoading, error, execute: fetchUsers, setData: setUsers } = useApi(adminApi.getAllUsers);
   const { data: specialisations, execute: fetchSpecialisations } = useApi(doctorApi.getSpecialisations);
   const { isLoading: isGranting, execute: grantDoctor } = useApi(adminApi.grantDoctor);
@@ -194,10 +197,14 @@ export function ManageUsers() {
 
               <div className="space-y-1">
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Specialisation</label>
-                <select
+               <select
                   value={specialisationId}
                   onChange={(e) => setSpecialisationId(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  className={cn(
+                    'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-1',
+                    accent.border,
+                    accent.ring
+                  )}
                 >
                   <option value="" disabled>Select a specialisation</option>
                   {specialisations?.map((spec: Specialisation) => (

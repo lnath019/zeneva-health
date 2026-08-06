@@ -7,8 +7,11 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Spinner } from '../ui/Spinner';
 import { Slot, Hospital } from '@/types';
+import { useRoleAccent } from '@/hooks/useRoleAccent';
+import { cn } from '@/lib/utils';
 
 export function ManageSlots() {
+  const accent = useRoleAccent();
   const { data: slots, isLoading: isSlotsLoading, error: slotsError, execute: fetchSlots, setData: setSlots } = useApi(slotApi.getMySlots);
   const { data: hospitals, execute: fetchHospitals } = useApi(hospitalApi.getAll);
   const { isLoading: isCreating, execute: createSlot } = useApi(slotApi.create);
@@ -164,13 +167,13 @@ export function ManageSlots() {
                     </span>
                   </div>
                   <div className="w-full bg-slate-100 rounded-full h-2">
-                    <div
+                   <div
                       className={`h-2 rounded-full transition-all duration-300 ${
                         bookedPercentage >= 100
                           ? 'bg-red-500'
                           : bookedPercentage > 75
                           ? 'bg-amber-500'
-                          : 'bg-primary'
+                          : accent.bg
                       }`}
                       style={{ width: `${bookedPercentage}%` }}
                     />
@@ -211,7 +214,11 @@ export function ManageSlots() {
                 <select
                   value={hospitalId}
                   onChange={(e) => setHospitalId(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  className={cn(
+                    'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-1',
+                    accent.border,
+                    accent.ring
+                  )}
                 >
                   <option value="" disabled>Select a Hospital</option>
                   {hospitals?.map((hospital: Hospital) => (
