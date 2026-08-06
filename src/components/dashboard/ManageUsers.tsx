@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useApi } from '@/hooks/useApi';
-import { adminApi, doctorApi } from '@/lib/api';
+import { adminApi, doctorApi, hospitalApi } from '@/lib/api';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Spinner } from '../ui/Spinner';
@@ -14,7 +14,9 @@ export function ManageUsers() {
   const accent = useRoleAccent();
   const { data: users, isLoading, error, execute: fetchUsers, setData: setUsers } = useApi(adminApi.getAllUsers);
   const { data: specialisations, execute: fetchSpecialisations } = useApi(doctorApi.getSpecialisations);
+  const { data: hospitals, execute: fetchHospitals } = useApi(hospitalApi.getAll);
   const { isLoading: isGranting, execute: grantDoctor } = useApi(adminApi.grantDoctor);
+  const { isLoading: isGrantingHospitalAdmin, execute: grantHospitalAdmin } = useApi(adminApi.grantHospitalAdmin);
   const { execute: deactivateUser } = useApi(adminApi.deactivateUser);
 
   const [grantTarget, setGrantTarget] = useState<User | null>(null);
@@ -23,10 +25,15 @@ export function ManageUsers() {
   const [grantError, setGrantError] = useState<string | null>(null);
   const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
 
+  const [hospitalAdminTarget, setHospitalAdminTarget] = useState<User | null>(null);
+  const [hospitalId, setHospitalId] = useState('');
+  const [hospitalAdminError, setHospitalAdminError] = useState<string | null>(null);
+
   useEffect(() => {
     fetchUsers();
     fetchSpecialisations();
-  }, [fetchUsers, fetchSpecialisations]);
+    fetchHospitals();
+  }, [fetchUsers, fetchSpecialisations, fetchHospitals]);
 
   const handleOpenGrantModal = (user: User) => {
     setGrantTarget(user);
@@ -37,6 +44,38 @@ export function ManageUsers() {
 
   const handleCloseGrantModal = () => {
     setGrantTarget(null);
+  };
+
+  const handleOpenHospitalAdminModal = (user: User) => {
+    setHospitalAdminTarget(user);
+    setHospitalId(hospitals && hospitals.length > 0 ? hospitals[0].id : '');
+    setHospitalAdminError(null);
+  };
+
+  const handleCloseHospitalAdminModal = () => {
+    setHospitalAdminTarget(null);
+  };
+
+  const handleHospitalAdminSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setHospitalAdminError(null);
+
+    if (!hospitalAdminTarget) return;
+    if (!hospitalId) {
+      setHospitalAdminError('Please select a hospital.');
+      return;
+    }
+
+    try {
+      await grantHospitalAdmin(hospitalAdminTarget.id, hospitalId);
+      if (users) {
+        setUsers(users.map((u) => (u.id === hospitalAdminTarget.id ? { ...u, role: 'hospital_admin' } : u)));
+      }
+      setHospitalAdminTarget(null);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to grant hospital admin role';
+      setHospitalAdminError(msg);
+    }
   };
 
   const handleGrantSubmit = async (e: React.FormEvent) => {
@@ -142,6 +181,11 @@ export function ManageUsers() {
                           Grant Doctor
                         </Button>
                       )}
+                      {user.role === 'patient' && (
+                        <Button size="sm" variant="outline" onClick={() => handleOpenHospitalAdminModal(user)}>
+                          Grant Hospital Admin
+                        </Button>
+                      )}
                       {user.isActive && (
                         <Button
                           size="sm"
@@ -222,6 +266,65 @@ export function ManageUsers() {
                 </Button>
                 <Button type="submit" disabled={isGranting}>
                   {isGranting ? <Spinner size="sm" className="text-white" /> : 'Grant Access'}
+                </Button>
+              </div>
+          </form>
+          </div>
+        </div>
+      )}
+
+      {hospitalAdminTarget && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+              <h3 className="text-lg font-bold text-slate-800">Grant Hospital Admin Role</h3>
+              <button
+                onClick={handleCloseHospitalAdminModal}
+                className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg hover:bg-slate-50"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleHospitalAdminSubmit} className="p-6 space-y-4">
+              {hospitalAdminError && (
+                <div className="bg-rose-50 border border-rose-100 text-rose-600 p-3 rounded-lg text-xs font-semibold">
+                  {hospitalAdminError}
+                </div>
+              )}
+
+              <div className="bg-slate-50 p-3 rounded-lg text-xs text-slate-600">
+                Granting hospital admin access to <strong>{hospitalAdminTarget.fullName}</strong> ({hospitalAdminTarget.email})
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Hospital</label>
+                <select
+                  value={hospitalId}
+                  onChange={(e) => setHospitalId(e.target.value)}
+                  className={cn(
+                    'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-1',
+                    accent.border,
+                    accent.ring
+                  )}
+                >
+                  <option value="" disabled>Select a hospital</option>
+                  {hospitals?.map((h) => (
+                    <option key={h.id} value={h.id}>
+                      {h.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-50">
+                <Button type="button" variant="outline" onClick={handleCloseHospitalAdminModal} disabled={isGrantingHospitalAdmin}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isGrantingHospitalAdmin}>
+                  {isGrantingHospitalAdmin ? <Spinner size="sm" className="text-white" /> : 'Grant Access'}
                 </Button>
               </div>
             </form>

@@ -1,4 +1,4 @@
-import { Hospital, Ambulance, Slot, Appointment, AppointmentTicket, Specialisation, User, UserProfile, Province, Lab, LabSlot, LabAppointment, Test, MedicalHistoryRecord, RecordCategory } from '@/types';
+import { Hospital, Ambulance, Slot, Appointment, AppointmentTicket, Specialisation, User, UserProfile, Province, Lab, LabSlot, LabAppointment, Test, MedicalHistoryRecord, RecordCategory, DoctorHospitalLink } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.zenivahealthcare.com/api';
 
@@ -241,6 +241,12 @@ export const adminApi = {
       body: JSON.stringify({ userId, nmcNumber, specialisationId }),
     });
   },
+  grantHospitalAdmin: async (userId: string, hospitalId: string) => {
+    return apiRequest('/admin/grant-hospital-admin', {
+      method: 'POST',
+      body: JSON.stringify({ userId, hospitalId }),
+    });
+  },
   deactivateUser: async (userId: string) => {
     return apiRequest<User>(`/admin/users/${userId}/deactivate`, {
       method: 'PATCH',
@@ -255,6 +261,43 @@ export const adminApi = {
   approveLab: async (labId: string) => {
     return apiRequest<{ message: string; lab: Lab }>(`/admin/labs/${labId}/approve`, {
       method: 'PATCH',
+    });
+  },
+};
+
+export const hospitalAdminApi = {
+  // hospital admin adds a doctor by NMC number -> pending, doctor must approve
+  addDoctor: async (nmcNumber: string) => {
+    return apiRequest<{ message: string; link: DoctorHospitalLink }>('/hospital-admin/doctors', {
+      method: 'POST',
+      body: JSON.stringify({ nmcNumber }),
+    });
+  },
+  // doctor requests to join a hospital -> pending, hospital admin must approve
+  requestHospital: async (hospitalId: string) => {
+    return apiRequest<{ message: string; link: DoctorHospitalLink }>('/hospital-admin/doctors/request', {
+      method: 'POST',
+      body: JSON.stringify({ hospitalId }),
+    });
+  },
+  // approve or reject a pending link — used by whichever side didn't initiate it
+  respond: async (linkId: string, action: 'approve' | 'reject') => {
+    return apiRequest<{ message: string; link: DoctorHospitalLink }>(`/hospital-admin/doctors/${linkId}/respond`, {
+      method: 'PATCH',
+      body: JSON.stringify({ action }),
+    });
+  },
+  // hospital admin's view of their hospital's doctors (pending + approved)
+  getMyHospitalDoctors: async () => {
+    return apiRequest<DoctorHospitalLink[]>('/hospital-admin/doctors');
+  },
+  // doctor's view of their hospitals (pending + approved)
+  getMyDoctorHospitals: async () => {
+    return apiRequest<DoctorHospitalLink[]>('/hospital-admin/doctors/my');
+  },
+  removeLink: async (linkId: string) => {
+    return apiRequest<{ message: string }>(`/hospital-admin/doctors/${linkId}`, {
+      method: 'DELETE',
     });
   },
 };

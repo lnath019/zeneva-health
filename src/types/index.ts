@@ -43,6 +43,20 @@ export interface Doctor {
   specialisation?: Specialisation | null;
 }
 
+export type DoctorHospitalStatus = 'pending' | 'approved' | 'rejected';
+export type DoctorHospitalInitiator = 'hospital' | 'doctor';
+
+export interface DoctorHospitalLink {
+  id: string;
+  doctorId: string;
+  hospitalId: string;
+  status: DoctorHospitalStatus;
+  initiatedBy: DoctorHospitalInitiator;
+  createdAt: string;
+  doctor?: Doctor;
+  hospital?: Hospital;
+}
+
 export type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'needs_reschedule';
 
 export interface Appointment {
