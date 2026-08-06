@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
-import { ThemeSwitcher } from '@/components/theme/ThemeSwitcher';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/context/CartContext';
 import { CartDrawer } from '@/components/shop/CartDrawer';
@@ -22,13 +21,12 @@ const NAV_LINKS = [
 ];
 
 export function MarketingHeader() {
-  const { token, isLoading, role } = useAuth();
+  const { token, isLoading } = useAuth();
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const { totalItems } = useCart();
 
-  const isAdmin = role === 'admin';
   const loginHref = `/login?redirect=${encodeURIComponent(pathname || '/')}`;
 
   return (
@@ -61,7 +59,6 @@ export function MarketingHeader() {
         </nav>
 
         <div className="hidden lg:flex items-center gap-3 shrink-0">
-          {isAdmin && <ThemeSwitcher />}
           <button
             onClick={() => setIsCartOpen(true)}
             className="relative w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:text-primary hover:border-primary/40 transition-colors"
@@ -117,11 +114,6 @@ export function MarketingHeader() {
               {link.label}
             </Link>
           ))}
-          {isAdmin && (
-            <div className="pt-3 flex items-center gap-3">
-              <ThemeSwitcher />
-            </div>
-          )}
           <div className="pt-1">
             {!isLoading && token ? (
               <Link href="/dashboard" className="block">

@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/Button';
-import { ThemeSwitcher } from '@/components/theme/ThemeSwitcher';
 import { CartDrawer } from '@/components/shop/CartDrawer';
 
 interface NavbarProps {
@@ -37,7 +36,6 @@ export function Navbar({ activeTabLabel }: NavbarProps) {
             </span>
           )}
         </button>
-        <ThemeSwitcher />
         <Button
           variant="outline"
           size="sm"

@@ -25,7 +25,7 @@ export function Sidebar() {
     {
       id: 'overview',
       label: 'Overview',
-      roles: ['patient', 'doctor', 'admin', 'lab'],
+      roles: ['patient', 'doctor', 'admin', 'lab', 'hospital_admin'],
       path: '/dashboard',
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -89,6 +89,28 @@ export function Sidebar() {
       )
     },
     {
+      id: 'manage-doctors',
+      label: 'Manage Doctors',
+      roles: ['hospital_admin'],
+      path: '/dashboard/manage-doctors',
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+      )
+    },
+    {
+      id: 'hospital-slots',
+      label: 'Manage Slots',
+      roles: ['hospital_admin'],
+      path: '/dashboard/hospital-slots',
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      )
+    },
+    {
       id: 'manage-users',
       label: 'User Directory',
       roles: ['admin'],
@@ -113,7 +135,7 @@ export function Sidebar() {
     {
       id: 'hospitals',
       label: 'Hospitals',
-      roles: ['patient', 'doctor', 'admin', 'lab'],
+      roles: ['patient', 'doctor', 'admin', 'lab', 'hospital_admin'],
       path: '/dashboard/hospitals',
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -124,7 +146,7 @@ export function Sidebar() {
     {
       id: 'ambulances',
       label: 'Ambulances',
-      roles: ['patient', 'doctor', 'admin', 'lab'],
+      roles: ['patient', 'doctor', 'admin', 'lab', 'hospital_admin'],
       path: '/dashboard/ambulances',
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -136,7 +158,7 @@ export function Sidebar() {
     {
       id: 'account-settings',
       label: 'Account Settings',
-      roles: ['patient', 'doctor', 'admin', 'lab'],
+      roles: ['patient', 'doctor', 'admin', 'lab', 'hospital_admin'],
       path: '/dashboard/account-settings',
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -236,7 +258,7 @@ export function Sidebar() {
     {
       id: 'medical-history',
       label: 'Medical History',
-      roles: ['patient', 'doctor', 'admin', 'lab'],
+      roles: ['patient', 'doctor', 'admin', 'lab', 'hospital_admin'],
       path: '/dashboard/medical-history',
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -286,7 +308,8 @@ export function Sidebar() {
                         role === 'doctor' && 'bg-secondary shadow-secondary/10',
                         role === 'admin' && 'bg-red-500 shadow-red-500/10',
                         role === 'lab' && 'bg-amber-500 shadow-amber-500/10',
-                        role === 'patient' && 'bg-primary shadow-primary/10'
+                        role === 'patient' && 'bg-primary shadow-primary/10',
+                        role === 'hospital_admin' && 'bg-emerald-600 shadow-emerald-600/10'
                       )
                     : 'text-neutralBrand hover:bg-slate-50 hover:text-slate-900'
                 )}
@@ -307,7 +330,8 @@ export function Sidebar() {
             role === 'admin' && 'bg-red-500',
             role === 'doctor' && 'bg-secondary',
             role === 'patient' && 'bg-primary',
-            role === 'lab' && 'bg-amber-500'
+            role === 'lab' && 'bg-amber-500',
+            role === 'hospital_admin' && 'bg-emerald-600'
           )} />
           <span className="text-xs uppercase tracking-wider font-extrabold text-slate-500">
             {role ? `${role} portal` : 'Authenticating...'}
