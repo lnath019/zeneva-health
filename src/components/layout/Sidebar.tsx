@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { UserRole } from '@/types';
 import { cn } from '@/lib/utils';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { LOGO_SRC, LOGO_ALT } from '@/config/brand';
 
 interface NavItem {
   id: string;
@@ -263,8 +264,8 @@ export function Sidebar() {
         {/* Brand */}
         <div className="flex items-center select-none">
           <img
-            src="/zeniva-logo.png"
-            alt="Zeniva Healthcare"
+            src={LOGO_SRC}
+            alt={LOGO_ALT}
             className="h-10 w-auto"
           />
         </div>

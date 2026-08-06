@@ -34,3 +34,31 @@ export function darkenTriplet(hex: string, weight: number): string {
 export function lightenTriplet(hex: string, weight: number): string {
   return tripletString(mix(hex, [255, 255, 255], weight));
 }
+
+export interface ThemeColors {
+  primary: string;
+  secondary: string;
+  tertiary: string;
+}
+
+export const HOVER_WEIGHT = 0.16;
+export const LIGHT_WEIGHT = 0.9;
+export const TERTIARY_HOVER_WEIGHT = 0.08;
+export const TERTIARY_LIGHT_WEIGHT = 0.5;
+
+// Derives the hover/light shades Tailwind's primary/secondary/tertiary
+// utilities read from a base theme. Shared by the SSR default in
+// src/app/layout.tsx and the runtime theme switcher in ThemeContext.
+export function buildColorVariables(theme: ThemeColors): Record<string, string> {
+  return {
+    '--color-primary': hexToTriplet(theme.primary),
+    '--color-primary-hover': darkenTriplet(theme.primary, HOVER_WEIGHT),
+    '--color-primary-light': lightenTriplet(theme.primary, LIGHT_WEIGHT),
+    '--color-secondary': hexToTriplet(theme.secondary),
+    '--color-secondary-hover': darkenTriplet(theme.secondary, HOVER_WEIGHT),
+    '--color-secondary-light': lightenTriplet(theme.secondary, LIGHT_WEIGHT),
+    '--color-tertiary': hexToTriplet(theme.tertiary),
+    '--color-tertiary-hover': darkenTriplet(theme.tertiary, TERTIARY_HOVER_WEIGHT),
+    '--color-tertiary-light': lightenTriplet(theme.tertiary, TERTIARY_LIGHT_WEIGHT),
+  };
+}

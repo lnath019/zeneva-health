@@ -9,6 +9,7 @@ import { ThemeSwitcher } from '@/components/theme/ThemeSwitcher';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/context/CartContext';
 import { CartDrawer } from '@/components/shop/CartDrawer';
+import { LOGO_SRC, LOGO_ALT } from '@/config/brand';
 
 const NAV_LINKS = [
   { label: 'Home', href: '/' },
@@ -35,8 +36,8 @@ export function MarketingHeader() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
        <Link href="/" className="flex items-center select-none shrink-0">
           <img
-            src="/zeniva-logo.png"
-            alt="Zeniva Healthcare"
+            src={LOGO_SRC}
+            alt={LOGO_ALT}
             className="h-16 w-auto"
           />
         </Link>

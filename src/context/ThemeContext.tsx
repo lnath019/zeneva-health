@@ -1,20 +1,16 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useLayoutEffect, useState, ReactNode } from 'react';
-import { darkenTriplet, hexToTriplet, lightenTriplet } from '@/lib/color';
+import { buildColorVariables, ThemeColors } from '@/lib/color';
+import { BRAND_COLORS } from '@/config/brand';
 
 export type ThemeColorKey = 'primary' | 'secondary' | 'tertiary';
-
-export interface ThemeColors {
-  primary: string;
-  secondary: string;
-  tertiary: string;
-}
+export type { ThemeColors };
 
 export const DEFAULT_THEME: ThemeColors = {
-  primary: '#F07818',
-  secondary: '#1CA3C0',
-  tertiary: '#F4F4F5',
+  primary: BRAND_COLORS.primary,
+  secondary: BRAND_COLORS.secondary,
+  tertiary: BRAND_COLORS.tertiary,
 };
 
 export interface ThemePreset {
@@ -23,33 +19,19 @@ export interface ThemePreset {
 }
 
 export const THEME_PRESETS: ThemePreset[] = [
-  { name: 'Zeniva Brand', colors: { primary: '#F07818', secondary: '#1CA3C0', tertiary: '#F4F4F5' } },
+  { name: 'Zeniva Brand', colors: DEFAULT_THEME },
   { name: 'Violet & Lime', colors: { primary: '#7C3AED', secondary: '#84CC16', tertiary: '#F5F3FF' } },
   { name: 'Rose & Slate', colors: { primary: '#E11D48', secondary: '#475569', tertiary: '#FDF2F4' } },
   { name: 'Forest & Gold', colors: { primary: '#15803D', secondary: '#CA8A04', tertiary: '#F4F8F4' } },
 ];
 
 const STORAGE_KEY = 'zeneva_theme';
-const HOVER_WEIGHT = 0.16;
-const LIGHT_WEIGHT = 0.9;
-const TERTIARY_HOVER_WEIGHT = 0.08;
-const TERTIARY_LIGHT_WEIGHT = 0.5;
 
 function applyTheme(theme: ThemeColors) {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
-
-  root.style.setProperty('--color-primary', hexToTriplet(theme.primary));
-  root.style.setProperty('--color-primary-hover', darkenTriplet(theme.primary, HOVER_WEIGHT));
-  root.style.setProperty('--color-primary-light', lightenTriplet(theme.primary, LIGHT_WEIGHT));
-
-  root.style.setProperty('--color-secondary', hexToTriplet(theme.secondary));
-  root.style.setProperty('--color-secondary-hover', darkenTriplet(theme.secondary, HOVER_WEIGHT));
-  root.style.setProperty('--color-secondary-light', lightenTriplet(theme.secondary, LIGHT_WEIGHT));
-
-  root.style.setProperty('--color-tertiary', hexToTriplet(theme.tertiary));
-  root.style.setProperty('--color-tertiary-hover', darkenTriplet(theme.tertiary, TERTIARY_HOVER_WEIGHT));
-  root.style.setProperty('--color-tertiary-light', lightenTriplet(theme.tertiary, TERTIARY_LIGHT_WEIGHT));
+  const variables = buildColorVariables(theme);
+  Object.entries(variables).forEach(([key, value]) => root.style.setProperty(key, value));
 }
 
 function loadStoredTheme(): ThemeColors | null {

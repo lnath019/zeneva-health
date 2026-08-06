@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { LOGO_SRC, LOGO_ALT } from '@/config/brand';
 
 const QUICK_LINKS = [
   { label: 'Home', href: '/' },
@@ -54,8 +55,8 @@ export function MarketingFooter() {
         <div>
          <div className="flex items-center mb-4">
             <img
-              src="/zeniva-logo.png"
-              alt="Zeniva Healthcare"
+              src={LOGO_SRC}
+              alt={LOGO_ALT}
               className="h-16 w-auto brightness-0 invert"
             />
           </div>

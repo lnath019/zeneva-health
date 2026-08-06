@@ -4,25 +4,10 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  /* Zeniva Healthcare brand palette, as "R G B" triplets so Tailwind's
-     color-opacity modifiers (e.g. bg-primary/20) work. */
-  --color-primary: 240 120 24;        /* #F07818 orange */
-  --color-primary-hover: 208 100 14;  /* darker orange for hover */
-  --color-primary-light: 253 231 209; /* pale orange bg */
-
-  --color-secondary: 28 163 192;       /* #1CA3C0 teal */
-  --color-secondary-hover: 20 138 163; /* darker teal for hover */
-  --color-secondary-light: 214 240 246;/* pale teal bg */
-
-  --color-tertiary: 244 244 245;      /* #F4F4F5 soft neutral bg — unchanged */
-  --color-tertiary-hover: 229 229 231;
-  --color-tertiary-light: 250 250 250;
-
-  --color-accent: 192 38 61; /* #C0263D red, from the "CARE" text — use sparingly */
-
-  --foreground: #1A202C; /* Dark charcoal — unchanged */
-}
+/* The --color-* and --foreground custom properties are generated from
+   src/config/brand.ts and injected as a :root rule in src/app/layout.tsx —
+   change the palette there, not here. The admin theme switcher
+   (src/context/ThemeContext.tsx) overrides them at runtime the same way. */
 
 body {
   color: var(--foreground);

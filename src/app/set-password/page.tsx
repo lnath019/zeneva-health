@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { LOGO_SRC, LOGO_ALT } from '@/config/brand'
 
 const MIN_PASSWORD_LENGTH = 8
 
@@ -53,11 +54,8 @@ export default function SetPasswordPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-tertiary px-4">
-      <div className="flex items-center gap-2 absolute left-8 top-8 select-none">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-lg font-bold text-white">
-          Z
-        </div>
-        <span className="text-xl font-bold tracking-wide text-primary">ZENIVA</span>
+      <div className="absolute left-8 top-8 select-none">
+        <img src={LOGO_SRC} alt={LOGO_ALT} className="h-10 w-auto" />
       </div>
 
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl shadow-slate-200/50">
