@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
-import { appointmentApi, slotApi } from "@/lib/api";
+import { appointmentApi, slotApi, hospitalAdminApi } from "@/lib/api";
 import { ManageSlots } from "@/components/dashboard/ManageSlots";
 import { BookAppointment } from "@/components/dashboard/BookAppointmentList";
 import { PatientAppointments } from "@/components/dashboard/PatientAppointments";
@@ -14,7 +14,7 @@ import { AllAppointments } from "@/components/dashboard/AllAppointments";
 import { Slot, Appointment } from "@/types";
 import { Spinner } from "@/components/ui/Spinner";
 
-type Role = "patient" | "doctor" | "admin";
+type Role = "patient" | "doctor" | "admin" | "hospital_admin";
 
 const doctorStats = [
   {
@@ -310,6 +310,70 @@ function DoctorOverview() {
   );
 }
 
+function HospitalAdminOverview() {
+  const { data: links, isLoading: isLinksLoading, execute: fetchLinks } = useApi(hospitalAdminApi.getMyHospitalDoctors);
+  const { data: schedule, isLoading: isScheduleLoading, execute: fetchSchedule } = useApi(slotApi.getHospitalSchedule);
+
+  useEffect(() => {
+    fetchLinks();
+    fetchSchedule();
+  }, [fetchLinks, fetchSchedule]);
+
+  const approvedCount = links ? links.filter((l) => l.status === "approved").length : 0;
+  const pendingCount = links ? links.filter((l) => l.status === "pending" && l.initiatedBy === "doctor").length : 0;
+  const totalActiveSlots = schedule
+    ? schedule.reduce((sum, entry) => sum + entry.slots.filter((s) => s.status === "active").length, 0)
+    : 0;
+
+  const isLoading = isLinksLoading || isScheduleLoading;
+
+  const hospitalName = links && links.length > 0 ? links[0].hospital?.name : null;
+
+  return (
+    <div className="space-y-8">
+      <SectionHeading
+        title="Hospital Console"
+        subtitle={hospitalName ? `Managing ${hospitalName}` : "Manage your hospital's doctors and availability."}
+      />
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <StatCard
+          label="Approved Doctors"
+          value={isLoading ? "..." : String(approvedCount)}
+          hint="Doctors linked to your hospital"
+        />
+        <StatCard
+          label="Pending Requests"
+          value={isLoading ? "..." : String(pendingCount)}
+          hint="Doctor requests awaiting your approval"
+        />
+        <StatCard
+          label="Active Slots"
+          value={isLoading ? "..." : String(totalActiveSlots)}
+          hint="Currently bookable slots"
+        />
+      </div>
+
+      <Card className="p-8">
+        <h3 className="mb-6 text-base font-bold text-slate-800">Getting Started</h3>
+        {approvedCount === 0 ? (
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <p className="text-sm font-medium text-slate-400">
+              No doctors linked yet. Add a doctor by NMC number to get started.
+            </p>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">
+            You have {approvedCount} approved doctor{approvedCount !== 1 ? "s" : ""} and{" "}
+            {totalActiveSlots} active slot{totalActiveSlots !== 1 ? "s" : ""}. Head to Manage Slots to add
+            availability.
+          </p>
+        )}
+      </Card>
+    </div>
+  );
+}
+
 function AdminOverview() {
   return (
     <div className="space-y-8">
@@ -343,12 +407,13 @@ function AdminOverview() {
     </div>
   );
 }
-
 const overviewByRole: Record<Role, () => JSX.Element> = {
   patient: PatientOverview,
   doctor: DoctorOverview,
   admin: AdminOverview,
+  hospital_admin: HospitalAdminOverview,
 };
+
 
 export default function DashboardPage() {
   const { role } = useAuth();
