@@ -49,6 +49,15 @@ const ROLE_ACCENTS: Record<string, RoleAccent> = {
     ring: 'focus:ring-primary',
     ringFocus: 'focus:border-primary focus:ring-2 focus:ring-primary/15',
   },
+  hospital_admin: {
+    bg: 'bg-emerald-600',
+    bgHover: 'hover:bg-emerald-700',
+    text: 'text-emerald-600',
+    border: 'border-emerald-600',
+    shadow: 'shadow-emerald-600/20',
+    ring: 'focus:ring-emerald-600',
+    ringFocus: 'focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/15',
+  },
 };
 
 export function useRoleAccent(): RoleAccent {

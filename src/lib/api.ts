@@ -247,6 +247,9 @@ export const adminApi = {
       body: JSON.stringify({ userId, hospitalId }),
     });
   },
+  getAllHospitalAdmins: async () => {
+    return apiRequest<{ id: string; userId: string; hospitalId: string; hospital: Hospital }[]>('/admin/hospital-admins');
+  },
   deactivateUser: async (userId: string) => {
     return apiRequest<User>(`/admin/users/${userId}/deactivate`, {
       method: 'PATCH',

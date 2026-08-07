@@ -15,6 +15,7 @@ export function ManageUsers() {
   const { data: users, isLoading, error, execute: fetchUsers, setData: setUsers } = useApi(adminApi.getAllUsers);
   const { data: specialisations, execute: fetchSpecialisations } = useApi(doctorApi.getSpecialisations);
   const { data: hospitals, execute: fetchHospitals } = useApi(hospitalApi.getAll);
+  const { data: hospitalAdminLinks, execute: fetchHospitalAdminLinks } = useApi(adminApi.getAllHospitalAdmins);
   const { isLoading: isGranting, execute: grantDoctor } = useApi(adminApi.grantDoctor);
   const { isLoading: isGrantingHospitalAdmin, execute: grantHospitalAdmin } = useApi(adminApi.grantHospitalAdmin);
   const { execute: deactivateUser } = useApi(adminApi.deactivateUser);
@@ -33,7 +34,8 @@ export function ManageUsers() {
     fetchUsers();
     fetchSpecialisations();
     fetchHospitals();
-  }, [fetchUsers, fetchSpecialisations, fetchHospitals]);
+    fetchHospitalAdminLinks();
+  }, [fetchUsers, fetchSpecialisations, fetchHospitals, fetchHospitalAdminLinks]);
 
   const handleOpenGrantModal = (user: User) => {
     setGrantTarget(user);
@@ -114,6 +116,11 @@ export function ManageUsers() {
     }
   };
 
+  const getHospitalNameForUser = (userId: string) => {
+    const link = hospitalAdminLinks?.find((l) => l.userId === userId);
+    return link?.hospital?.name ?? null;
+  };
+
   const roleBadge = (role: User['role']) => {
     const styles: Record<User['role'], string> = {
       admin: 'bg-red-50 text-red-700 border-red-200',
@@ -165,6 +172,11 @@ export function ManageUsers() {
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border capitalize ${roleBadge(user.role)}`}>
                       {user.role}
                     </span>
+                    {user.role === 'hospital_admin' && (
+                      <div className="text-[11px] text-slate-400 mt-1">
+                        {getHospitalNameForUser(user.id) ?? 'No hospital linked'}
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
