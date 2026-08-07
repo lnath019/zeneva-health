@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { Product } from "@/data/products";
 import { useCart } from "@/context/CartContext";
 
@@ -8,14 +9,19 @@ export function ProductCard({ product }: { product: Product }) {
   const { addToCart } = useCart();
   const [justAdded, setJustAdded] = React.useState(false);
 
-  const handleAdd = () => {
+  const handleAdd = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     addToCart(product);
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1200);
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden">
+    <Link
+      href={`/buy-medicines/${product.id}`}
+      className="bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden"
+    >
       <div className="aspect-square bg-slate-50 flex flex-col items-center justify-center text-slate-300">
         {/* TODO: once real product photos are added to /public/images/products/, replace this block with:
             <img src={product.image} alt={product.name} className="w-full h-full object-cover" /> */}
@@ -40,6 +46,6 @@ export function ProductCard({ product }: { product: Product }) {
           {justAdded ? "Added!" : "Add to Cart"}
         </button>
       </div>
-    </div>
+    </Link>
   );
 }

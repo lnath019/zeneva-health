@@ -65,13 +65,15 @@ export function ManageSlots() {
     }
 
     try {
-      const newSlot = await createSlot({
+      const response = await createSlot({
         hospitalId,
         slotDate,
         startTime,
         endTime,
         maxTokens: tokens,
       });
+
+      const newSlot = response.slot;
 
       if (slots) {
         setSlots([...slots, newSlot]);

@@ -46,6 +46,21 @@ export interface Doctor {
 export type DoctorHospitalStatus = 'pending' | 'approved' | 'rejected';
 export type DoctorHospitalInitiator = 'hospital' | 'doctor';
 
+export interface HospitalSlotSummary {
+  id: string;
+  slotDate: string;
+  startTime: string;
+  endTime: string;
+  maxTokens: number;
+  status: 'active' | 'paused' | 'ended';
+  isAvailable: boolean;
+}
+
+export interface HospitalDoctorSchedule {
+  doctor: Doctor;
+  slots: HospitalSlotSummary[];
+}
+
 export interface DoctorHospitalLink {
   id: string;
   doctorId: string;
@@ -58,7 +73,6 @@ export interface DoctorHospitalLink {
 }
 
 export type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'needs_reschedule';
-
 export interface Appointment {
   id: string;
   patientId: string;

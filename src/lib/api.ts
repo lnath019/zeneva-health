@@ -1,4 +1,4 @@
-import { Hospital, Ambulance, Slot, Appointment, AppointmentTicket, Specialisation, User, UserProfile, Province, Lab, LabSlot, LabAppointment, Test, MedicalHistoryRecord, RecordCategory, DoctorHospitalLink } from '@/types';
+import { Hospital, Ambulance, Slot, Appointment, AppointmentTicket, Specialisation, User, UserProfile, Province, Lab, LabSlot, LabAppointment, Test, MedicalHistoryRecord, RecordCategory, DoctorHospitalLink, HospitalDoctorSchedule } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.zenivahealthcare.com/api';
 
@@ -188,19 +188,43 @@ export const slotApi = {
     return apiRequest<Slot[]>('/doctor/slots/my');
   },
   create: async (slotData: {
+    doctorId?: string; // required when a hospital admin or admin creates the slot
     hospitalId: string;
     slotDate: string;
     startTime: string;
     endTime: string;
     maxTokens: number;
   }) => {
-    return apiRequest<Slot>('/doctor/slots', {
+    return apiRequest<{ message: string; slot: Slot }>('/doctor/slots', {
       method: 'POST',
       body: JSON.stringify(slotData),
     });
   },
+  update: async (slotId: string, data: Partial<{ startTime: string; endTime: string; maxTokens: number }>) => {
+    return apiRequest<{ message: string; slot: Slot }>(`/doctor/slots/${slotId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+  pause: async (slotId: string) => {
+    return apiRequest<{ message: string; slot: Slot }>(`/doctor/slots/${slotId}/pause`, {
+      method: 'PATCH',
+    });
+  },
+  resume: async (slotId: string) => {
+    return apiRequest<{ message: string; slot: Slot }>(`/doctor/slots/${slotId}/resume`, {
+      method: 'PATCH',
+    });
+  },
+  end: async (slotId: string) => {
+    return apiRequest<{ message: string; slot: Slot }>(`/doctor/slots/${slotId}/end`, {
+      method: 'PATCH',
+    });
+  },
+  getHospitalSchedule: async () => {
+    return apiRequest<HospitalDoctorSchedule[]>('/doctor/slots/hospital/schedule');
+  },
 };
-
 export const doctorApi = {
   getSpecialisations: async () => {
     return apiRequest<Specialisation[]>('/doctor/specialisations');

@@ -1,5 +1,13 @@
 export type ProductCategory = "First Aid" | "Personal Care" | "Health & Wellness";
 
+export interface ProductReview {
+  id: string;
+  author: string;
+  rating: number; // 1-5
+  comment: string;
+  date: string; // ISO date string
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -8,6 +16,13 @@ export interface Product {
   unit: string;
   image: string;
   description: string;
+  images?: string[];        // additional gallery photos beyond `image`
+  rating?: number;          // average rating, undefined until reviews exist
+  reviewCount?: number;
+  reviews?: ProductReview[];
+  stock?: number;           // undefined = stock status unknown/not tracked yet
+  manufacturingDate?: string;
+  expiryDate?: string;
 }
 
 export const PRODUCTS: Product[] = [
