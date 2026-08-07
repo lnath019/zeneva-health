@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
+import { useAuth } from "@/context/AuthContext";
 import { slotApi, appointmentApi, medicalHistoryApi } from "@/lib/api";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
@@ -11,6 +12,8 @@ import { Slot } from "@/types";
 
 export function BookAppointment() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { token } = useAuth();
   const {
     data: slots,
     isLoading,
@@ -32,18 +35,39 @@ export function BookAppointment() {
   const [selectedRecordIds, setSelectedRecordIds] = useState<string[]>([]);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
-  useEffect(() => {
+useEffect(() => {
     fetchSlots();
-    fetchMyRecords();
-  }, [fetchSlots, fetchMyRecords]);
+    if (token) {
+      fetchMyRecords();
+    }
+  }, [fetchSlots, fetchMyRecords, token]);
 
-  const handleOpenBookingModal = (slot: Slot) => {
+  // After a login redirect, reopen the specific slot the user tried to book
+  useEffect(() => {
+    const pendingSlotId = searchParams.get("slot");
+    if (!pendingSlotId || !token || !slots) return;
+
+    const pendingSlot = slots.find((s: Slot) => s.id === pendingSlotId);
+    if (pendingSlot) {
+      setBookingSlot(pendingSlot);
+      setReason("");
+      setSelectedRecordIds([]);
+      setBookingError(null);
+    }
+    router.replace("/book-doctor");
+  }, [searchParams, token, slots, router]);
+
+ const handleOpenBookingModal = (slot: Slot) => {
+    if (!token) {
+      const target = `/book-doctor?slot=${slot.id}`;
+      router.push(`/login?redirect=${encodeURIComponent(target)}`);
+      return;
+    }
     setBookingSlot(slot);
     setReason("");
     setSelectedRecordIds([]);
     setBookingError(null);
   };
-
   const toggleRecord = (id: string) => {
     setSelectedRecordIds((prev) => (prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]));
   };
