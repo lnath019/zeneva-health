@@ -191,7 +191,33 @@ function HeroSearchBar() {
 function HeroSection() {
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-primary-light via-white to-secondary/10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      {/* Faded background illustration, right side only */}
+      <div
+        className="hidden lg:block absolute top-0 right-0 h-full w-[50%] pointer-events-none opacity-50"
+        style={{
+          backgroundImage: 'url(/images/hero-illustration.webp)',
+          backgroundSize: 'contain',
+          backgroundPosition: 'center right',
+          backgroundRepeat: 'no-repeat',
+          maskImage: 'radial-gradient(ellipse 75% 75% at right center, black 35%, transparent 100%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 75% 75% at right center, black 35%, transparent 100%)',
+        }}
+      />
+
+      {/* Faded top band across full width */}
+      <div
+        className="absolute top-0 inset-x-0 h-64 pointer-events-none opacity-[0.18]"
+        style={{
+          backgroundImage: 'url(/images/medical-supplies.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'top center',
+          backgroundRepeat: 'no-repeat',
+          maskImage: 'linear-gradient(to bottom, black 0%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, black 0%, transparent 100%)',
+        }}
+      />
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div>
           <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white text-primary text-xs font-bold uppercase tracking-wider shadow-sm">
             Nepal&apos;s Complete Health Facilitator
@@ -425,15 +451,36 @@ function TestimonialsSection() {
 
 function ContactCtaSection() {
   return (
-    <section className="py-16 bg-secondary">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center justify-between gap-8 text-center lg:text-left">
-        <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-            Need help or have a question?
-          </h2>
-          <p className="mt-2 text-secondary-light/90">
-            Our support team is available around the clock for emergencies and general inquiries.
-          </p>
+    <section className="relative py-16 bg-secondary overflow-hidden">
+      {/* Faint pill/vial texture */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.08]"
+        style={{
+          backgroundImage: 'url(/images/pills-pattern.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          maskImage: 'radial-gradient(ellipse 90% 90% at center, black 30%, transparent 100%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 90% 90% at center, black 30%, transparent 100%)',
+        }}
+      />
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center justify-between gap-8 text-center lg:text-left">
+        <div className="flex items-center gap-6">
+          <div className="hidden sm:block shrink-0 w-24 h-24 rounded-2xl overflow-hidden shadow-lg border-4 border-white/20 -rotate-3">
+            <img
+              src="/images/first-aid-kit.png"
+              alt="First aid kit"
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              Need help or have a question?
+            </h2>
+            <p className="mt-2 text-secondary-light/90">
+              Our support team is available around the clock for emergencies and general inquiries.
+            </p>
+          </div>
         </div>
         <div className="flex flex-wrap justify-center gap-3">
           <a
