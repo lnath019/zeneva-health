@@ -203,7 +203,7 @@ export function Sidebar() {
     {
       id: 'manage-lab',
       label: 'Manage Lab',
-      roles: ['lab'],
+      roles: ['lab', 'hospital_admin', 'admin'],
       path: '/dashboard/manage-lab',
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -214,7 +214,7 @@ export function Sidebar() {
     {
       id: 'manage-lab-slots',
       label: 'Manage Lab Slots',
-      roles: ['lab'],
+      roles: ['lab', 'hospital_admin', 'admin'],
       path: '/dashboard/manage-lab-slots',
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -225,7 +225,7 @@ export function Sidebar() {
     {
       id: 'lab-bookings',
       label: 'Lab Bookings',
-      roles: ['lab'],
+      roles: ['lab', 'hospital_admin', 'admin'],
       path: '/dashboard/lab-bookings',
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

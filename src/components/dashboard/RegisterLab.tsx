@@ -103,9 +103,9 @@ export function RegisterLab() {
           Your lab is pending admin approval. Once approved, it will appear in the
           public directory and you can start creating test slots.
         </p>
-        <p className="text-slate-400 text-xs">
-          Log out and log back in to unlock the Lab management tabs in your sidebar.
-        </p>
+       <p className="text-slate-400 text-xs">
+      Your Lab management tabs are now available in the sidebar.
+      </p>
       </div>
     );
   }
