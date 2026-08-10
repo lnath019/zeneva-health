@@ -87,13 +87,13 @@ export function RegisterLab() {
     }
   };
 
-  if (role !== 'patient') {
-    return (
-      <div className="bg-white border border-slate-100 rounded-xl p-12 text-center text-slate-500 font-medium">
-        Only patient accounts can register a new lab.
-      </div>
-    );
-  }
+  if (role !== 'hospital_admin' && role !== 'admin') {
+  return (
+    <div className="bg-white border border-slate-100 rounded-xl p-12 text-center text-slate-500 font-medium">
+      Only hospital admin or admin accounts can register a new lab.
+    </div>
+  );
+}
 
   if (submitted) {
     return (
