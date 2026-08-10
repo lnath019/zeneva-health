@@ -350,6 +350,15 @@ export const testApi = {
       method: 'DELETE',
     });
   },
+  request: async (testId: string, data: { fullName: string; phone: string; email?: string }) => {
+    return apiRequest<{ message: string; request: { id: string; testId: string; status: string } }>(
+      `/labs/tests/${testId}/request`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
+  },
 };
 
 export const labApi = {

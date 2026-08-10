@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useApi } from "@/hooks/useApi";
-import { testApi } from "@/lib/api";
+import { testApi, authApi } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { Spinner } from "@/components/ui/Spinner";
@@ -10,11 +11,66 @@ import { Test } from "@/types";
 
 export default function BookDiagnosticsPage() {
   const { data: tests, isLoading, error, execute: fetchTests } = useApi(testApi.getAll);
+  const { token } = useAuth();
+
   const [selectedTest, setSelectedTest] = useState<Test | null>(null);
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     fetchTests();
   }, [fetchTests]);
+
+  useEffect(() => {
+    if (!token) return;
+    authApi
+      .getMe()
+      .then((profile) => {
+        setFullName(profile.fullName || "");
+        setPhone(profile.phone || "");
+        setEmail(profile.email || "");
+      })
+      .catch(() => {
+        // not fatal — user can still fill the form manually
+      });
+  }, [token]);
+
+  const handleOpenModal = (test: Test) => {
+    setSelectedTest(test);
+    setSubmitted(false);
+    setSubmitError(null);
+  };
+
+  const handleCloseModal = () => setSelectedTest(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitError(null);
+
+    if (!selectedTest) return;
+    if (!fullName.trim() || !phone.trim()) {
+      setSubmitError("Please provide your name and phone number.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await testApi.request(selectedTest.id, {
+        fullName: fullName.trim(),
+        phone: phone.trim(),
+        email: email.trim() || undefined,
+      });
+      setSubmitted(true);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Failed to submit request");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -49,7 +105,7 @@ export default function BookDiagnosticsPage() {
               {tests.map((test: Test) => (
                 <button
                   key={test.id}
-                  onClick={() => setSelectedTest(test)}
+                  onClick={() => handleOpenModal(test)}
                   className="text-left bg-white border border-slate-100 rounded-xl p-6 shadow-sm hover:shadow-md hover:border-primary/30 transition-all"
                 >
                   <h3 className="text-base font-bold text-slate-800">{test.name}</h3>
@@ -72,7 +128,7 @@ export default function BookDiagnosticsPage() {
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
               <h3 className="text-lg font-bold text-slate-800">{selectedTest.name}</h3>
               <button
-                onClick={() => setSelectedTest(null)}
+                onClick={handleCloseModal}
                 className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg hover:bg-slate-50"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -80,26 +136,98 @@ export default function BookDiagnosticsPage() {
                 </svg>
               </button>
             </div>
-            <div className="p-6 space-y-4">
-              <p className="text-sm text-slate-600 leading-relaxed">
-                We&apos;ve noted your interest in <strong>{selectedTest.name}</strong>. Our team will
-                reach out to connect you with a lab or hospital that offers this test.
-              </p>
-              <div className="bg-slate-50 rounded-lg p-4 space-y-2 text-sm">
-                <p>
-                  <span className="font-semibold text-slate-800">Call us: </span>
-                  <a href="tel:+97714440000" className="text-primary hover:underline">
-                    +977-1-4440000
-                  </a>
-                </p>
-                <p>
-                  <span className="font-semibold text-slate-800">Email us: </span>
-                  <a href="mailto:support@zeneva.com" className="text-primary hover:underline">
-                    support@zeneva.com
-                  </a>
+
+            {submitted ? (
+              <div className="p-6 space-y-3 text-center">
+                <div className="w-12 h-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h4 className="text-base font-bold text-slate-800">Request received</h4>
+                <p className="text-sm text-slate-500">
+                  Our team will contact you shortly to connect you with a lab or hospital that
+                  offers <strong>{selectedTest.name}</strong>.
                 </p>
               </div>
-            </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                <p className="text-sm text-slate-600">
+                  Leave your contact details and we&apos;ll reach out to connect you with a lab or
+                  hospital that offers this test.
+                </p>
+
+                {submitError && (
+                  <div className="bg-rose-50 border border-rose-100 text-rose-600 p-3 rounded-lg text-xs font-semibold">
+                    {submitError}
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    Email (optional)
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full py-3 rounded-lg bg-primary text-white font-bold hover:bg-primary-hover transition-colors disabled:opacity-50"
+                >
+                  {submitting ? "Submitting..." : "Submit Request"}
+                </button>
+
+                <div className="bg-slate-50 rounded-lg p-4 space-y-2 text-sm">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                    Prefer to talk to someone directly?
+                  </p>
+                  <p>
+                    <span className="font-semibold text-slate-800">Call us: </span>
+                    <a href="tel:+97714440000" className="text-primary hover:underline">
+                      +977-1-4440000
+                    </a>
+                  </p>
+                  <p>
+                    <span className="font-semibold text-slate-800">Email us: </span>
+                    <a href="mailto:support@zeneva.com" className="text-primary hover:underline">
+                      support@zeneva.com
+                    </a>
+                  </p>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
