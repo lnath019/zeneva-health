@@ -7,11 +7,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Spinner } from '../ui/Spinner';
 import { DoctorHospitalLink } from '@/types';
-import { useRoleAccent } from '@/hooks/useRoleAccent';
-import { cn } from '@/lib/utils';
-
 export function ManageDoctors() {
-  const accent = useRoleAccent();
   const { data: links, isLoading, error, execute: fetchLinks, setData: setLinks } = useApi(hospitalAdminApi.getMyHospitalDoctors);
   const { isLoading: isAdding, execute: addDoctor } = useApi(hospitalAdminApi.addDoctor);
   const { execute: respond } = useApi(hospitalAdminApi.respond);
