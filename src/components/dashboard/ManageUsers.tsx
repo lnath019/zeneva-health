@@ -19,12 +19,14 @@ export function ManageUsers() {
   const { isLoading: isGranting, execute: grantDoctor } = useApi(adminApi.grantDoctor);
   const { isLoading: isGrantingHospitalAdmin, execute: grantHospitalAdmin } = useApi(adminApi.grantHospitalAdmin);
   const { execute: deactivateUser } = useApi(adminApi.deactivateUser);
+  const { execute: reactivateUser } = useApi(adminApi.reactivateUser);
 
   const [grantTarget, setGrantTarget] = useState<User | null>(null);
   const [nmcNumber, setNmcNumber] = useState('');
   const [specialisationId, setSpecialisationId] = useState('');
   const [grantError, setGrantError] = useState<string | null>(null);
   const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
+  const [reactivatingId, setReactivatingId] = useState<string | null>(null);
 
   const [hospitalAdminTarget, setHospitalAdminTarget] = useState<User | null>(null);
   const [hospitalId, setHospitalId] = useState('');
@@ -113,6 +115,20 @@ export function ManageUsers() {
       // surfaced via row state below
     } finally {
       setDeactivatingId(null);
+    }
+  };
+
+  const handleReactivate = async (user: User) => {
+    setReactivatingId(user.id);
+    try {
+      await reactivateUser(user.id);
+      if (users) {
+        setUsers(users.map((u) => (u.id === user.id ? { ...u, isActive: true } : u)));
+      }
+    } catch {
+      // surfaced via row state below
+    } finally {
+      setReactivatingId(null);
     }
   };
 
@@ -206,6 +222,16 @@ export function ManageUsers() {
                           onClick={() => handleDeactivate(user)}
                         >
                           {deactivatingId === user.id ? <Spinner size="sm" /> : 'Deactivate'}
+                        </Button>
+                      )}
+                      {user.isActive && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={deactivatingId === user.id}
+                          onClick={() => handleReactivate(user)}
+                        >
+                          {deactivatingId === user.id ? <Spinner size="sm" /> : 'Reactivate'}
                         </Button>
                       )}
                     </div>
