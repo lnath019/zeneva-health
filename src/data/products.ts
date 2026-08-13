@@ -1,4 +1,4 @@
-export type ProductCategory = "First Aid" | "Personal Care" | "Health & Wellness";
+import type { BackendProduct } from "@/lib/api";
 
 export interface ProductReview {
   id: string;
@@ -9,37 +9,41 @@ export interface ProductReview {
 }
 
 export interface Product {
-  id: string;
+  id: string;            // = backend product SLUG (used in URLs and as cart product identity)
   name: string;
-  category: ProductCategory;
-  price: number;
+  category: string;      // free text now — admin can add any category
+  price: number;         // amount actually charged (= discountedPrice from backend)
+  originalPrice?: number; // pre-discount price, shown struck-through when a discount applies
+  discountPercent?: number;
   unit: string;
   image: string;
   description: string;
-  images?: string[];        // additional gallery photos beyond `image`
-  rating?: number;          // average rating, undefined until reviews exist
+  images?: string[];
+  rating?: number;
   reviewCount?: number;
   reviews?: ProductReview[];
-  stock?: number;           // undefined = stock status unknown/not tracked yet
+  stock?: number;
   manufacturingDate?: string;
   expiryDate?: string;
 }
 
-export const PRODUCTS: Product[] = [
-  { id: "band-aid", name: "Band-Aid Strips (Assorted)", category: "First Aid", price: 90, unit: "box of 20", image: "/images/products/band-aid.jpg", description: "Waterproof adhesive bandages for minor cuts and scrapes." },
-  { id: "gauze-roll", name: "Sterile Gauze Roll", category: "First Aid", price: 60, unit: "roll", image: "/images/products/gauze-roll.jpg", description: "Soft sterile gauze for wound dressing." },
-  { id: "cotton-wool", name: "Cotton Wool Roll", category: "First Aid", price: 45, unit: "100g roll", image: "/images/products/cotton-wool.jpg", description: "Absorbent cotton for cleaning wounds." },
-  { id: "elastic-bandage", name: "Elastic Crepe Bandage", category: "First Aid", price: 120, unit: "roll", image: "/images/products/elastic-bandage.jpg", description: "Stretchable bandage for sprains and support wraps." },
-  { id: "hand-sanitizer", name: "Hand Sanitizer 100ml", category: "Personal Care", price: 110, unit: "100ml bottle", image: "/images/products/hand-sanitizer.jpg", description: "Alcohol-based sanitizer that kills 99.9% of germs." },
-  { id: "antiseptic-wash", name: "Antiseptic Hand Wash", category: "Personal Care", price: 150, unit: "200ml bottle", image: "/images/products/antiseptic-wash.jpg", description: "Gentle antibacterial hand wash for daily use." },
-  { id: "chapstick", name: "Moisturizing Lip Balm", category: "Personal Care", price: 80, unit: "stick", image: "/images/products/chapstick.jpg", description: "Soothing lip balm for dry and chapped lips." },
-  { id: "sunscreen", name: "Sunscreen SPF 50", category: "Personal Care", price: 550, unit: "50ml tube", image: "/images/products/sunscreen.jpg", description: "Broad-spectrum sun protection for daily wear." },
-  { id: "face-mask", name: "Disposable Face Masks", category: "Personal Care", price: 250, unit: "pack of 10", image: "/images/products/face-mask.jpg", description: "3-ply protective masks for everyday use." },
-  { id: "body-lotion", name: "Moisturizing Body Lotion", category: "Personal Care", price: 320, unit: "200ml bottle", image: "/images/products/body-lotion.jpg", description: "Daily hydration for dry and sensitive skin." },
-  { id: "mosquito-spray", name: "Mosquito Repellent Spray", category: "Health & Wellness", price: 190, unit: "100ml bottle", image: "/images/products/mosquito-spray.jpg", description: "Long-lasting protection against mosquitoes." },
-  { id: "mosquito-cream", name: "Mosquito Repellent Cream", category: "Health & Wellness", price: 140, unit: "50g tube", image: "/images/products/mosquito-cream.jpg", description: "Skin-friendly repellent cream for outdoor use." },
-  { id: "thermometer", name: "Digital Thermometer", category: "Health & Wellness", price: 350, unit: "1 unit", image: "/images/products/thermometer.jpg", description: "Fast, accurate digital temperature readings." },
-  { id: "multivitamin", name: "Multivitamin Tablets", category: "Health & Wellness", price: 480, unit: "bottle of 30", image: "/images/products/multivitamin.jpg", description: "Daily multivitamin for general wellness." },
-];
+// Kept for backward compatibility with any old references — the catalog is
+// now admin-managed via the API, not hardcoded here.
+export const PRODUCTS: Product[] = [];
+export const CATEGORIES: string[] = [];
 
-export const CATEGORIES: ProductCategory[] = ["First Aid", "Personal Care", "Health & Wellness"];
+// Maps a backend product (as returned by productApi) onto the shape the
+// existing shop UI (ProductCard, CartContext, etc.) already expects.
+export function toCartProduct(bp: BackendProduct): Product {
+  return {
+    id: bp.slug,
+    name: bp.name,
+    category: bp.category,
+    price: bp.discountedPrice,
+    originalPrice: bp.discountPercent > 0 ? bp.price : undefined,
+    discountPercent: bp.discountPercent > 0 ? bp.discountPercent : undefined,
+    unit: bp.unit || "",
+    image: bp.imageUrl || "",
+    description: bp.description || "",
+  };
+}

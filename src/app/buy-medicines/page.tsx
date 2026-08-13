@@ -1,16 +1,35 @@
 "use client";
 
-import React, { useState } from "react";
-import { PRODUCTS, CATEGORIES, ProductCategory } from "@/data/products";
+import React, { useEffect, useState } from "react";
+import { toCartProduct, Product } from "@/data/products";
+import { productApi } from "@/lib/api";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 
 export default function BuyMedicinesPage() {
-  const [activeCategory, setActiveCategory] = useState<ProductCategory | "All">("All");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string>("All");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await productApi.getAll();
+        setProducts(res.products.map(toCartProduct));
+      } catch (err: any) {
+        setError(err.message || "Failed to load products");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const categories = Array.from(new Set(products.map((p) => p.category)));
 
   const visibleProducts =
-    activeCategory === "All" ? PRODUCTS : PRODUCTS.filter((p) => p.category === activeCategory);
+    activeCategory === "All" ? products : products.filter((p) => p.category === activeCategory);
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -27,31 +46,39 @@ export default function BuyMedicinesPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-8">
-            <button
-              onClick={() => setActiveCategory("All")}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                activeCategory === "All"
-                  ? "bg-primary text-white shadow-sm shadow-primary/20"
-                  : "bg-white border border-slate-200 text-slate-600 hover:border-primary/40 hover:text-primary"
-              }`}
-            >
-              All Products
-            </button>
-            {CATEGORIES.map((category) => (
+          {!loading && !error && (
+            <div className="flex flex-wrap gap-2 mb-8">
               <button
-                key={category}
-                onClick={() => setActiveCategory(category)}
+                onClick={() => setActiveCategory("All")}
                 className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                  activeCategory === category
+                  activeCategory === "All"
                     ? "bg-primary text-white shadow-sm shadow-primary/20"
                     : "bg-white border border-slate-200 text-slate-600 hover:border-primary/40 hover:text-primary"
                 }`}
               >
-                {category}
+                All Products
               </button>
-            ))}
-          </div>
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setActiveCategory(category)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                    activeCategory === category
+                      ? "bg-primary text-white shadow-sm shadow-primary/20"
+                      : "bg-white border border-slate-200 text-slate-600 hover:border-primary/40 hover:text-primary"
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {loading && <p className="text-slate-400 text-sm">Loading products…</p>}
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {!loading && !error && visibleProducts.length === 0 && (
+            <p className="text-slate-400 text-sm">No products available yet.</p>
+          )}
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
             {visibleProducts.map((product) => (

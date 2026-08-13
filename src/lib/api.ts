@@ -576,3 +576,65 @@ export const orderApi = {
     return apiRequest<{ order: BackendOrder }>(`/orders/${id}`);
   },
 };
+export interface BackendProduct {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  unit?: string | null;
+  description?: string | null;
+  imageUrl?: string | null;
+  price: number;
+  discountPercent: number;
+  discountedPrice: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const productApi = {
+  getAll: async () => {
+    return apiRequest<{ products: BackendProduct[] }>('/products');
+  },
+  getBySlug: async (slug: string) => {
+    return apiRequest<{ product: BackendProduct }>(`/products/${slug}`);
+  },
+  getAllAdmin: async () => {
+    return apiRequest<{ products: BackendProduct[] }>('/products/admin');
+  },
+  create: async (data: {
+    name: string;
+    category: string;
+    unit?: string;
+    description?: string;
+    imageUrl?: string;
+    price: number;
+    discountPercent?: number;
+    isActive?: boolean;
+  }) => {
+    return apiRequest<{ message: string; product: BackendProduct }>('/products', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  update: async (id: string, data: Partial<{
+    name: string;
+    category: string;
+    unit: string;
+    description: string;
+    imageUrl: string;
+    price: number;
+    discountPercent: number;
+    isActive: boolean;
+  }>) => {
+    return apiRequest<{ message: string; product: BackendProduct }>(`/products/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+  remove: async (id: string) => {
+    return apiRequest<{ message: string }>(`/products/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};

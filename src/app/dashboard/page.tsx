@@ -280,6 +280,8 @@ function PatientOverview() {
 }
 
 function DoctorOverview() {
+  const router = useRouter();
+
   return (
     <div className="space-y-8">
       <SectionHeading
@@ -301,7 +303,10 @@ function DoctorOverview() {
           <p className="text-sm font-medium text-slate-400">
             You haven&apos;t created any slots for today.
           </p>
-          <button className="mt-2 text-xs font-semibold text-secondary transition-colors hover:text-secondary-hover">
+          <button
+            onClick={() => router.push("/dashboard?tab=manage-slots")}
+            className="mt-2 text-xs font-semibold text-secondary transition-colors hover:text-secondary-hover"
+          >
             Create availability slot &rarr;
           </button>
         </div>
