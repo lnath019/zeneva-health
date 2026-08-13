@@ -279,6 +279,13 @@ export const adminApi = {
       method: 'PATCH',
     });
   },
+
+  reactivateUser: async (userId: string) => {
+    return apiRequest<User>(`/admin/users/${userId}/reactivate`, {
+      method: 'PATCH',
+    });
+  },
+  
   getAllAppointments: async () => {
     return apiRequest<Appointment[]>('/admin/appointments');
   },
