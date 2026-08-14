@@ -114,6 +114,29 @@ export const hospitalApi = {
       body: JSON.stringify(data),
     });
   },
+  getMy: async () => {
+    return apiRequest<Hospital>('/hospitals/my');
+  },
+  update: async (id: string, data: Partial<{
+    name: string;
+    provinceId: string;
+    districtId: string;
+    municipalityId: string;
+    address: string;
+    latitude: number;
+    longitude: number;
+    phone: string;
+  }>) => {
+    return apiRequest<{ message: string; hospital: Hospital }>(`/hospitals/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+  remove: async (id: string) => {
+    return apiRequest<{ message: string }>(`/hospitals/${id}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 export const locationApi = {
@@ -285,7 +308,7 @@ export const adminApi = {
       method: 'PATCH',
     });
   },
-  
+
   getAllAppointments: async () => {
     return apiRequest<Appointment[]>('/admin/appointments');
   },
@@ -641,6 +664,39 @@ export const productApi = {
   },
   remove: async (id: string) => {
     return apiRequest<{ message: string }>(`/products/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+export interface OpdScheduleEntry {
+  id: string;
+  hospitalId: string;
+  doctorId: string;
+  dayOfWeek: 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday';
+  startTime: string;
+  endTime: string;
+  doctor?: {
+    id: string;
+    user?: { fullName: string };
+    specialisation?: { name: string };
+  };
+}
+
+export const opdScheduleApi = {
+  getByHospital: async (hospitalId: string) => {
+    return apiRequest<OpdScheduleEntry[]>(`/opd-schedule/hospital/${hospitalId}`);
+  },
+  getMy: async () => {
+    return apiRequest<OpdScheduleEntry[]>('/opd-schedule/my');
+  },
+  create: async (data: { doctorId: string; dayOfWeek: string; startTime: string; endTime: string }) => {
+    return apiRequest<{ message: string; entry: OpdScheduleEntry }>('/opd-schedule', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  remove: async (id: string) => {
+    return apiRequest<{ message: string }>(`/opd-schedule/${id}`, {
       method: 'DELETE',
     });
   },

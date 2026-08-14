@@ -214,7 +214,7 @@ export function ManageUsers() {
                           Grant Hospital Admin
                         </Button>
                       )}
-                      {user.isActive && (
+                      {user.isActive ? (
                         <Button
                           size="sm"
                           variant="ghost"
@@ -223,15 +223,14 @@ export function ManageUsers() {
                         >
                           {deactivatingId === user.id ? <Spinner size="sm" /> : 'Deactivate'}
                         </Button>
-                      )}
-                      {user.isActive && (
+                      ) : (
                         <Button
                           size="sm"
-                          variant="ghost"
-                          disabled={deactivatingId === user.id}
+                          variant="outline"
+                          disabled={reactivatingId === user.id}
                           onClick={() => handleReactivate(user)}
                         >
-                          {deactivatingId === user.id ? <Spinner size="sm" /> : 'Reactivate'}
+                          {reactivatingId === user.id ? <Spinner size="sm" /> : 'Reactivate'}
                         </Button>
                       )}
                     </div>

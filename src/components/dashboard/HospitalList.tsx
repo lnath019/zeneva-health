@@ -32,10 +32,15 @@ export function HospitalList() {
   const { data: hospitals, isLoading, error, execute: fetchHospitals, setData: setHospitals } = useApi(hospitalApi.getAll);
   const { data: locationTree, execute: fetchTree } = useApi(locationApi.getTree);
   const { isLoading: isCreating, execute: createHospital } = useApi(hospitalApi.create);
+  const { data: myHospital, execute: fetchMyHospital, setData: setMyHospital } = useApi(hospitalApi.getMy);
+  const { isLoading: isUpdating, execute: updateHospital } = useApi(hospitalApi.update);
+  const { execute: removeHospital } = useApi(hospitalApi.remove);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // form fields
+  // create form fields
   const [name, setName] = useState('');
   const [provinceId, setProvinceId] = useState('');
   const [districtId, setDistrictId] = useState('');
@@ -44,9 +49,23 @@ export function HospitalList() {
   const [phone, setPhone] = useState('');
   const [createError, setCreateError] = useState<string | null>(null);
 
-  useEffect(() => { fetchHospitals(); }, [fetchHospitals]);
+  // edit form fields
+  const [editName, setEditName] = useState('');
+  const [editProvinceId, setEditProvinceId] = useState('');
+  const [editDistrictId, setEditDistrictId] = useState('');
+  const [editMunicipalityId, setEditMunicipalityId] = useState('');
+  const [editAddress, setEditAddress] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editError, setEditError] = useState<string | null>(null);
 
-  // cascading options
+  useEffect(() => {
+    fetchHospitals();
+    if (role === 'hospital_admin') {
+      fetchMyHospital().catch(() => {}); // no hospital linked yet — fine, edit button just won't show
+    }
+  }, [fetchHospitals, fetchMyHospital, role]);
+
+  // cascading options (create modal)
   const districts = useMemo<District[]>(() => {
     if (!locationTree || !provinceId) return [];
     return locationTree.find((p: Province) => p.id === provinceId)?.districts ?? [];
@@ -56,6 +75,17 @@ export function HospitalList() {
     if (!districtId) return [];
     return districts.find((d: District) => d.id === districtId)?.municipalities ?? [];
   }, [districts, districtId]);
+
+  // cascading options (edit modal)
+  const editDistricts = useMemo<District[]>(() => {
+    if (!locationTree || !editProvinceId) return [];
+    return locationTree.find((p: Province) => p.id === editProvinceId)?.districts ?? [];
+  }, [locationTree, editProvinceId]);
+
+  const editMunicipalities = useMemo<Municipality[]>(() => {
+    if (!editDistrictId) return [];
+    return editDistricts.find((d: District) => d.id === editDistrictId)?.municipalities ?? [];
+  }, [editDistricts, editDistrictId]);
 
   const handleOpenModal = () => {
     fetchTree();
@@ -101,6 +131,78 @@ export function HospitalList() {
     }
   };
 
+  const handleOpenEditModal = async () => {
+    if (!myHospital) return;
+    await fetchTree();
+    setEditName(myHospital.name);
+    setEditAddress(myHospital.address || '');
+    setEditPhone(myHospital.phone || '');
+    const prov = myHospital.municipality?.district?.province?.id || '';
+    const dist = myHospital.municipality?.district?.id || '';
+    const muni = myHospital.municipality?.id || '';
+    setEditProvinceId(prov);
+    setEditDistrictId(dist);
+    setEditMunicipalityId(muni);
+    setEditError(null);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditProvinceChange = (id: string) => {
+    setEditProvinceId(id);
+    setEditDistrictId('');
+    setEditMunicipalityId('');
+  };
+
+  const handleEditDistrictChange = (id: string) => {
+    setEditDistrictId(id);
+    setEditMunicipalityId('');
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditError(null);
+
+    if (!myHospital) return;
+    if (!editName.trim()) { setEditError('Hospital name is required.'); return; }
+    if (!editProvinceId || !editDistrictId || !editMunicipalityId) {
+      setEditError('Please select a province, district, and municipality.'); return;
+    }
+
+    try {
+      const result = await updateHospital(myHospital.id, {
+        name: editName.trim(),
+        provinceId: editProvinceId,
+        districtId: editDistrictId,
+        municipalityId: editMunicipalityId,
+        address: editAddress.trim() || undefined,
+        phone: editPhone.trim() || undefined,
+      });
+      const updated = result.hospital;
+      setMyHospital(updated);
+      if (hospitals) {
+        setHospitals(hospitals.map((h) => (h.id === updated.id ? { ...h, ...updated } : h)));
+      }
+      setIsEditModalOpen(false);
+    } catch (err: unknown) {
+      setEditError(err instanceof Error ? err.message : 'Failed to update hospital');
+    }
+  };
+
+  const handleDeleteHospital = async (hospital: Hospital) => {
+    if (!confirm(`Delete "${hospital.name}"? This also removes its admins, doctor links, and OPD schedule.`)) return;
+    setDeletingId(hospital.id);
+    try {
+      await removeHospital(hospital.id);
+      if (hospitals) {
+        setHospitals(hospitals.filter((h) => h.id !== hospital.id));
+      }
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to delete hospital');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -132,7 +234,26 @@ export function HospitalList() {
               key={hospital.id}
               className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md hover:border-primary/25 hover:-translate-y-1 transition-all duration-200"
             >
-              <h3 className="text-lg font-bold text-slate-800 tracking-tight">{hospital.name}</h3>
+              <div className="flex justify-between items-start gap-2">
+                <h3 className="text-lg font-bold text-slate-800 tracking-tight">{hospital.name}</h3>
+                <div className="flex items-center gap-2 shrink-0">
+                  {role === 'hospital_admin' && myHospital && myHospital.id === hospital.id && (
+                    <Button size="sm" variant="outline" onClick={handleOpenEditModal}>
+                      Edit
+                    </Button>
+                  )}
+                  {role === 'admin' && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={deletingId === hospital.id}
+                      onClick={() => handleDeleteHospital(hospital)}
+                    >
+                      {deletingId === hospital.id ? <Spinner size="sm" /> : 'Delete'}
+                    </Button>
+                  )}
+                </div>
+              </div>
 
               <div className="space-y-3 mt-4 text-sm text-slate-500">
                 {/* Location hierarchy */}
@@ -220,7 +341,6 @@ export function HospitalList() {
                 required
               />
 
-              {/* Province */}
               <div>
                 <FieldLabel>Province</FieldLabel>
                 <select
@@ -239,7 +359,6 @@ export function HospitalList() {
                 </select>
               </div>
 
-              {/* District */}
               <div>
                 <FieldLabel>District</FieldLabel>
                 <select
@@ -256,7 +375,6 @@ export function HospitalList() {
                 </select>
               </div>
 
-              {/* Municipality */}
               <div>
                 <FieldLabel>Municipality / Local Body</FieldLabel>
                 <select
@@ -273,7 +391,6 @@ export function HospitalList() {
                 </select>
               </div>
 
-              {/* Optional specific address */}
               <Input
                 label="Street / Building Address (optional)"
                 value={address}
@@ -296,6 +413,112 @@ export function HospitalList() {
                 </Button>
                 <Button type="submit" isLoading={isCreating}>
                   Add Hospital
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal (hospital_admin's own hospital) */}
+      {isEditModalOpen && myHospital && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-lg w-full border border-slate-100 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-slate-800">Edit Hospital Details</h3>
+                <p className="text-slate-400 text-xs mt-0.5">Update your hospital's location and contact info.</p>
+              </div>
+              <button onClick={() => setIsEditModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {editError && (
+              <div className="bg-red-50 text-red-600 text-xs font-semibold p-3 rounded-lg mb-4">{editError}</div>
+            )}
+
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <Input
+                label="Hospital Name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                disabled={isUpdating}
+                required
+              />
+
+              <div>
+                <FieldLabel>Province</FieldLabel>
+                <select
+                  value={editProvinceId}
+                  onChange={(e) => handleEditProvinceChange(e.target.value)}
+                  className={SELECT_CLS}
+                  disabled={isUpdating || !locationTree}
+                  required
+                >
+                  <option value="">
+                    {!locationTree ? 'Loading provinces…' : 'Select Province'}
+                  </option>
+                  {locationTree?.map((p: Province) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <FieldLabel>District</FieldLabel>
+                <select
+                  value={editDistrictId}
+                  onChange={(e) => handleEditDistrictChange(e.target.value)}
+                  className={SELECT_CLS}
+                  disabled={isUpdating || !editProvinceId}
+                  required
+                >
+                  <option value="">{!editProvinceId ? 'Select a province first' : 'Select District'}</option>
+                  {editDistricts.map((d: District) => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <FieldLabel>Municipality / Local Body</FieldLabel>
+                <select
+                  value={editMunicipalityId}
+                  onChange={(e) => setEditMunicipalityId(e.target.value)}
+                  className={SELECT_CLS}
+                  disabled={isUpdating || !editDistrictId}
+                  required
+                >
+                  <option value="">{!editDistrictId ? 'Select a district first' : 'Select Municipality'}</option>
+                  {editMunicipalities.map((m: Municipality) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <Input
+                label="Street / Building Address (optional)"
+                value={editAddress}
+                onChange={(e) => setEditAddress(e.target.value)}
+                disabled={isUpdating}
+              />
+
+              <Input
+                label="Contact Number (optional)"
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
+                disabled={isUpdating}
+              />
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <Button type="button" variant="ghost" onClick={() => setIsEditModalOpen(false)} disabled={isUpdating}>
+                  Cancel
+                </Button>
+                <Button type="submit" isLoading={isUpdating}>
+                  Save Changes
                 </Button>
               </div>
             </form>
