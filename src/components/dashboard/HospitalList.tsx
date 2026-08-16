@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useApi } from '@/hooks/useApi';
 import { hospitalApi, locationApi } from '@/lib/api';
@@ -29,6 +30,7 @@ function locationLabel(hospital: Hospital): string {
 
 export function HospitalList() {
   const { role } = useAuth();
+  const router = useRouter();
   const { data: hospitals, isLoading, error, execute: fetchHospitals, setData: setHospitals } = useApi(hospitalApi.getAll);
   const { data: locationTree, execute: fetchTree } = useApi(locationApi.getTree);
   const { isLoading: isCreating, execute: createHospital } = useApi(hospitalApi.create);
@@ -240,6 +242,15 @@ export function HospitalList() {
                   {role === 'hospital_admin' && myHospital && myHospital.id === hospital.id && (
                     <Button size="sm" variant="outline" onClick={handleOpenEditModal}>
                       Edit
+                    </Button>
+                  )}
+                  {role === 'admin' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => router.push(`/dashboard/hospitals/${hospital.id}/manage`)}
+                    >
+                      Manage
                     </Button>
                   )}
                   {role === 'admin' && (
@@ -528,3 +539,4 @@ export function HospitalList() {
     </div>
   );
 }
+

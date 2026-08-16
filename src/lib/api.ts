@@ -244,8 +244,9 @@ export const slotApi = {
       method: 'PATCH',
     });
   },
-  getHospitalSchedule: async () => {
-    return apiRequest<HospitalDoctorSchedule[]>('/doctor/slots/hospital/schedule');
+  getHospitalSchedule: async (hospitalId?: string) => {
+    const qs = hospitalId ? `?hospitalId=${hospitalId}` : '';
+    return apiRequest<HospitalDoctorSchedule[]>(`/doctor/slots/hospital/schedule${qs}`);
   },
 };
 export const doctorApi = {
@@ -324,10 +325,11 @@ export const adminApi = {
 
 export const hospitalAdminApi = {
   // hospital admin adds a doctor by NMC number -> pending, doctor must approve
-  addDoctor: async (nmcNumber: string) => {
+  // (admin can pass hospitalId to add a pre-approved doctor to any hospital)
+  addDoctor: async (nmcNumber: string, hospitalId?: string) => {
     return apiRequest<{ message: string; link: DoctorHospitalLink }>('/hospital-admin/doctors', {
       method: 'POST',
-      body: JSON.stringify({ nmcNumber }),
+      body: JSON.stringify(hospitalId ? { nmcNumber, hospitalId } : { nmcNumber }),
     });
   },
   // doctor requests to join a hospital -> pending, hospital admin must approve
@@ -356,6 +358,9 @@ export const hospitalAdminApi = {
     return apiRequest<{ message: string }>(`/hospital-admin/doctors/${linkId}`, {
       method: 'DELETE',
     });
+  },
+  getHospitalDoctors: async (hospitalId: string) => {
+    return apiRequest<DoctorHospitalLink[]>(`/hospital-admin/doctors/hospital/${hospitalId}`);
   },
 };
 
@@ -689,7 +694,7 @@ export const opdScheduleApi = {
   getMy: async () => {
     return apiRequest<OpdScheduleEntry[]>('/opd-schedule/my');
   },
-  create: async (data: { doctorId: string; dayOfWeek: string; startTime: string; endTime: string }) => {
+  create: async (data: { doctorId: string; dayOfWeek: string; startTime: string; endTime: string; hospitalId?: string }) => {
     return apiRequest<{ message: string; entry: OpdScheduleEntry }>('/opd-schedule', {
       method: 'POST',
       body: JSON.stringify(data),
