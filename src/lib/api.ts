@@ -611,6 +611,7 @@ export const orderApi = {
     return apiRequest<{ order: BackendOrder }>(`/orders/${id}`);
   },
 };
+
 export interface BackendProduct {
   id: string;
   name: string;
@@ -636,6 +637,33 @@ export const productApi = {
   },
   getAllAdmin: async () => {
     return apiRequest<{ products: BackendProduct[] }>('/products/admin');
+  },
+  uploadImage: async (file: File) => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('zeneva_token') : null;
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const response = await fetch(`${API_BASE_URL}/products/upload-image`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      body: formData,
+    });
+
+    const text = await response.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      data = { message: text };
+    }
+
+    if (!response.ok) {
+      throw new Error(data.message || `Upload failed with status ${response.status}`);
+    }
+
+    // backend returns a relative path like /uploads/products/xyz.jpg —
+    // prefix with API_BASE_URL so it's a usable absolute URL
+    return `${API_BASE_URL}${data.imageUrl}` as string;
   },
   create: async (data: {
     name: string;
@@ -673,6 +701,7 @@ export const productApi = {
     });
   },
 };
+
 export interface OpdScheduleEntry {
   id: string;
   hospitalId: string;

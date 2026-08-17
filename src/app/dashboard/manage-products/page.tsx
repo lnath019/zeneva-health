@@ -23,6 +23,11 @@ export default function ManageProductsPage() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
 
+  // image upload state
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
   const load = async () => {
     setLoading(true);
     try {
@@ -44,6 +49,8 @@ export default function ManageProductsPage() {
   const openAddForm = () => {
     setEditingId(null);
     setForm(emptyForm);
+    setImageFile(null);
+    setImagePreview(null);
     setShowForm(true);
   };
 
@@ -59,6 +66,8 @@ export default function ManageProductsPage() {
       discountPercent: String(p.discountPercent),
       isActive: p.isActive,
     });
+    setImageFile(null);
+    setImagePreview(p.imageUrl || null);
     setShowForm(true);
   };
 
@@ -66,6 +75,32 @@ export default function ManageProductsPage() {
     setShowForm(false);
     setEditingId(null);
     setForm(emptyForm);
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError("Please select an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image must be under 5MB");
+      return;
+    }
+
+    setError(null);
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setForm({ ...form, imageUrl: "" });
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -73,12 +108,24 @@ export default function ManageProductsPage() {
     setSaving(true);
     setError(null);
     try {
+      let imageUrl = form.imageUrl.trim() || undefined;
+
+      // if a new file was picked, upload it first and use the returned URL
+      if (imageFile) {
+        setUploadingImage(true);
+        try {
+          imageUrl = await productApi.uploadImage(imageFile);
+        } finally {
+          setUploadingImage(false);
+        }
+      }
+
       const payload = {
         name: form.name.trim(),
         category: form.category.trim(),
         unit: form.unit.trim() || undefined,
         description: form.description.trim() || undefined,
-        imageUrl: form.imageUrl.trim() || undefined,
+        imageUrl,
         price: parseFloat(form.price),
         discountPercent: form.discountPercent ? parseFloat(form.discountPercent) : 0,
         isActive: form.isActive,
@@ -263,14 +310,37 @@ export default function ManageProductsPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-500">Image URL</label>
-                <input
-                  type="url"
-                  value={form.imageUrl}
-                  onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-                  className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                  placeholder="https://..."
-                />
+                <label className="text-xs font-semibold text-slate-500">Product Image</label>
+                <div className="mt-1 flex items-center gap-3">
+                  <div className="w-20 h-20 rounded-lg bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                    {imagePreview ? (
+                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-slate-300 text-xs">No image</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="cursor-pointer px-3 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-semibold text-center hover:bg-slate-50">
+                      {imagePreview ? "Change Image" : "Choose Image"}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        onChange={handleImageSelect}
+                        className="hidden"
+                      />
+                    </label>
+                    {imagePreview && (
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="text-xs text-red-500 font-semibold hover:underline"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <p className="mt-1 text-xs text-slate-400">JPG, PNG, WEBP, or GIF. Max 5MB.</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -329,7 +399,13 @@ export default function ManageProductsPage() {
                   disabled={saving}
                   className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-bold hover:bg-primary-hover disabled:opacity-50"
                 >
-                  {saving ? "Saving…" : editingId ? "Save Changes" : "Add Product"}
+                  {saving
+                    ? uploadingImage
+                      ? "Uploading image…"
+                      : "Saving…"
+                    : editingId
+                    ? "Save Changes"
+                    : "Add Product"}
                 </button>
               </div>
             </form>
