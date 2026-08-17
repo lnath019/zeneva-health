@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
 import { useAuth } from "@/context/AuthContext";
@@ -9,6 +9,13 @@ import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Spinner } from "../ui/Spinner";
 import { Slot } from "@/types";
+
+interface DoctorGroup {
+  doctorId: string;
+  doctorName: string;
+  specialisationName: string;
+  slots: Slot[];
+}
 
 export function BookAppointment() {
   const router = useRouter();
@@ -35,6 +42,20 @@ export function BookAppointment() {
   const [selectedRecordIds, setSelectedRecordIds] = useState<string[]>([]);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
+  const [expandedDoctorIds, setExpandedDoctorIds] = useState<Set<string>>(new Set());
+
+  const toggleDoctorExpanded = (doctorId: string) => {
+    setExpandedDoctorIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(doctorId)) {
+        next.delete(doctorId);
+      } else {
+        next.add(doctorId);
+      }
+      return next;
+    });
+  };
+
 useEffect(() => {
     fetchSlots();
     if (token) {
@@ -53,6 +74,10 @@ useEffect(() => {
       setReason("");
       setSelectedRecordIds([]);
       setBookingError(null);
+      const doctorId = pendingSlot.doctor?.id ?? pendingSlot.doctorId;
+      if (doctorId) {
+        setExpandedDoctorIds((prev) => new Set(prev).add(doctorId));
+      }
     }
     router.replace("/book-doctor");
   }, [searchParams, token, slots, router]);
@@ -148,6 +173,36 @@ useEffect(() => {
     return matchSearch && matchHospital && matchSpecialisation && matchDate;
   });
 
+  // Group filtered slots by doctor, so each doctor appears once with all their slots listed together
+  const doctorGroups = useMemo<DoctorGroup[]>(() => {
+    if (!filteredSlots) return [];
+    const map = new Map<string, DoctorGroup>();
+
+    for (const slot of filteredSlots) {
+      const doctorId = slot.doctor?.id ?? slot.doctorId ?? "unknown";
+      if (!map.has(doctorId)) {
+        map.set(doctorId, {
+          doctorId,
+          doctorName: slot.doctor?.user?.fullName || "Specialist Doctor",
+          specialisationName: slot.doctor?.specialisation?.name || "General Practitioner",
+          slots: [],
+        });
+      }
+      map.get(doctorId)!.slots.push(slot);
+    }
+
+    // sort each doctor's slots chronologically
+    Array.from(map.values()).forEach((group) => {
+      group.slots.sort((a: Slot, b: Slot) => {
+        const dateCompare = a.slotDate.localeCompare(b.slotDate);
+        if (dateCompare !== 0) return dateCompare;
+        return (a.startTime || "").localeCompare(b.startTime || "");
+      });
+    });
+
+    return Array.from(map.values());
+  }, [filteredSlots]);
+
   return (
     <div className="space-y-6">
       {/* Header Panel */}
@@ -221,7 +276,7 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content — grouped by doctor, expandable */}
       {isLoading ? (
         <div className="flex justify-center items-center py-12">
           <Spinner size="lg" />
@@ -230,108 +285,97 @@ useEffect(() => {
         <div className="bg-red-50 border border-red-200 text-red-600 p-6 rounded-xl text-sm font-medium">
           Error loading availability slots: {error}
         </div>
-      ) : !filteredSlots || filteredSlots.length === 0 ? (
+      ) : doctorGroups.length === 0 ? (
         <div className="bg-white border border-slate-100 rounded-xl p-12 text-center text-slate-500 font-medium">
           No available slots match your search.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredSlots.map((slot: Slot) => {
-            const booked = slot.bookedTokens ?? 0;
-            const max = slot.maxTokens ?? 0;
-            const isFull = booked >= max;
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {doctorGroups.map((group) => {
+            const isExpanded = expandedDoctorIds.has(group.doctorId);
 
             return (
               <div
-                key={slot.id}
-                className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between"
+                key={group.doctorId}
+                className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden"
               >
-                <div>
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="text-xs font-semibold text-neutralBrand  py-1 rounded-full uppercase tracking-wider">
-                      {slot.slotDate}
-                    </span>
-                    <div className="flex items-center">
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full bg-emerald-700`}
-                      />
-                    <span
-                      className={`text-xs font-semibold px-1.5 py-1 rounded-md capitalize tracking-wider ${
-                        isFull ? " text-rose-700 " : " text-emerald-700 "
-                      }`}
-                    >
-
-                      
-                      
-                      {isFull ? "Fully Booked" : "Available"}
-                    </span>
-                    </div>
+                {/* Doctor header — click to expand/collapse */}
+                <button
+                  type="button"
+                  onClick={() => toggleDoctorExpanded(group.doctorId)}
+                  className="w-full text-left p-6 flex items-center gap-4 hover:bg-slate-50/60 transition-colors"
+                >
+                  {/* Avatar placeholder — swap for <img src={doctor.imageUrl} /> once photos exist */}
+                  <div className="w-16 h-16 rounded-full bg-primary-light flex items-center justify-center shrink-0 text-primary font-bold text-xl relative overflow-hidden">
+                    {group.doctorName.replace(/^Dr\.?\s*/i, "").slice(0, 1).toUpperCase() || "D"}
                   </div>
 
-                  <h3 className="text-lg font-bold text-slate-800 tracking-tight mb-0.5">
-                    Dr. {slot.doctor?.user?.fullName || "Specialist Doctor"}
-                  </h3>
-                  <p className="text-primary text-xs font-semibold mb-4">
-                    {slot.doctor?.specialisation?.name ||
-                      "General Practitioner"}
-                  </p>
-
-                  <div className="space-y-2 text-xs text-slate-600 mb-6">
-                    <div className="flex items-center gap-2">
-                      <svg
-                        className="w-4 h-4 text-slate-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      <span>
-                        {slot.startTime?.slice(0, 5)} -{" "}
-                        {slot.endTime?.slice(0, 5)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <svg
-                        className="w-4 h-4 text-slate-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                        />
-                      </svg>
-                      <span>
-                        {slot.hospital?.name} ({slot.hospital?.address})
-                      </span>
-                    </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-bold text-slate-800 tracking-tight truncate">
+                      Dr. {group.doctorName.replace(/^Dr\.?\s*/i, "")}
+                    </h3>
+                    <p className="text-primary text-xs font-semibold mt-0.5">
+                      {group.specialisationName}
+                    </p>
+                    <p className="text-slate-400 text-xs mt-1">
+                      {group.slots.length} available slot{group.slots.length !== 1 ? "s" : ""}
+                    </p>
                   </div>
-                </div>
 
-                <div className="border-t border-slate-50 pt-4 flex items-center justify-between gap-4">
-                  <span className="text-xs text-slate-500 font-medium">
-                    Tokens:{" "}
-                    <span className="font-semibold text-slate-800">
-                      {booked}/{max}
-                    </span>
-                  </span>
-                  <Button
-                    onClick={() => handleOpenBookingModal(slot)}
-                    disabled={isFull}
-                    size="sm"
+                  <svg
+                    className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
-                    Book Now
-                  </Button>
-                </div>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* Slot list — only rendered when expanded */}
+                {isExpanded && (
+                  <div className="divide-y divide-slate-50 max-h-80 overflow-y-auto border-t border-slate-50">
+                    {group.slots.map((slot) => {
+                      const booked = slot.bookedTokens ?? 0;
+                      const max = slot.maxTokens ?? 0;
+                      const isFull = booked >= max;
+
+                      return (
+                        <div key={slot.id} className="p-4 flex items-center justify-between gap-4">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-semibold text-neutralBrand uppercase tracking-wider">
+                                {slot.slotDate}
+                              </span>
+                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md uppercase tracking-wider text-emerald-700 bg-emerald-50">
+                                {isFull ? "Fully Booked" : "Available"}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                              <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span>{slot.startTime?.slice(0, 5)} - {slot.endTime?.slice(0, 5)}</span>
+                            </div>
+                            <p className="text-xs text-slate-400 mt-0.5 truncate">
+                              {slot.hospital?.name}
+                            </p>
+                            <p className="text-[11px] text-slate-400 mt-0.5">
+                              Tokens: <span className="font-semibold text-slate-700">{booked}/{max}</span>
+                            </p>
+                          </div>
+                          <Button
+                            onClick={() => handleOpenBookingModal(slot)}
+                            disabled={isFull}
+                            size="sm"
+                          >
+                            Book Now
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })}
