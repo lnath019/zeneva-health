@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { HospitalList } from "@/components/dashboard/HospitalList";
@@ -10,6 +11,8 @@ import { cn } from "@/lib/utils";
 type Tab = "hospitals" | "ambulances";
 
 export default function HealthDirectoryPage() {
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get("hospital");
   const [tab, setTab] = useState<Tab>("hospitals");
 
   return (
@@ -54,7 +57,7 @@ export default function HealthDirectoryPage() {
             </button>
           </div>
 
-          {tab === "hospitals" ? <HospitalList /> : <AmbulanceList />}
+          {tab === "hospitals" ? <HospitalList highlightId={highlightId} /> : <AmbulanceList />}
         </div>
       </main>
       <MarketingFooter />

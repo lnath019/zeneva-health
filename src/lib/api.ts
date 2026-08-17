@@ -108,6 +108,10 @@ export const hospitalApi = {
     municipalityId: string;
     address?: string;
     phone?: string;
+    email?: string;
+    website?: string;
+    hospitalType?: string;
+    description?: string;
   }) => {
     return apiRequest<{ message: string; hospital: Hospital }>('/hospitals', {
       method: 'POST',
@@ -126,6 +130,10 @@ export const hospitalApi = {
     latitude: number;
     longitude: number;
     phone: string;
+    email: string;
+    website: string;
+    hospitalType: string;
+    description: string;
   }>) => {
     return apiRequest<{ message: string; hospital: Hospital }>(`/hospitals/${id}`, {
       method: 'PATCH',

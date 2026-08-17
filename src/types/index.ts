@@ -151,6 +151,10 @@ export interface Hospital {
   latitude: number | null;
   longitude: number | null;
   phone: string | null;
+  email: string | null;
+  website: string | null;
+  hospitalType: 'general' | 'multi_specialty' | 'clinic' | 'nursing_home' | 'diagnostic_center' | null;
+  description: string | null;
   createdAt?: string;
   updatedAt?: string;
   municipality?: {

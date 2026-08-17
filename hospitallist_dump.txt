@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -9,24 +9,9 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Spinner } from '../ui/Spinner';
 import { District, Hospital, Municipality, Province } from '@/types';
-import { cn } from '@/lib/utils';
 
 const SELECT_CLS =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50';
-
-const TEXTAREA_CLS =
-  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50';
-
-const HOSPITAL_TYPES: { value: string; label: string }[] = [
-  { value: 'general', label: 'General Hospital' },
-  { value: 'multi_specialty', label: 'Multi-Specialty Hospital' },
-  { value: 'clinic', label: 'Clinic' },
-  { value: 'nursing_home', label: 'Nursing Home' },
-  { value: 'diagnostic_center', label: 'Diagnostic Center' },
-];
-
-const hospitalTypeLabel = (type: string | null | undefined) =>
-  HOSPITAL_TYPES.find((t) => t.value === type)?.label ?? null;
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -38,12 +23,12 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 
 function locationLabel(hospital: Hospital): string {
   const m = hospital.municipality;
-  if (!m) return hospital.address || '—';
+  if (!m) return hospital.address || 'â€”';
   const parts = [m.name, m.district?.name, m.district?.province?.name].filter(Boolean);
   return parts.join(', ');
 }
 
-export function HospitalList({ highlightId }: { highlightId?: string | null }) {
+export function HospitalList() {
   const { role } = useAuth();
   const router = useRouter();
   const { data: hospitals, isLoading, error, execute: fetchHospitals, setData: setHospitals } = useApi(hospitalApi.getAll);
@@ -55,9 +40,7 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingHospitalId, setEditingHospitalId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [selectedHospital, setSelectedHospital] = useState<Hospital | null>(null);
 
   // create form fields
   const [name, setName] = useState('');
@@ -66,10 +49,6 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
   const [municipalityId, setMunicipalityId] = useState('');
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [website, setWebsite] = useState('');
-  const [hospitalType, setHospitalType] = useState('');
-  const [description, setDescription] = useState('');
   const [createError, setCreateError] = useState<string | null>(null);
 
   // edit form fields
@@ -79,26 +58,14 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
   const [editMunicipalityId, setEditMunicipalityId] = useState('');
   const [editAddress, setEditAddress] = useState('');
   const [editPhone, setEditPhone] = useState('');
-  const [editEmail, setEditEmail] = useState('');
-  const [editWebsite, setEditWebsite] = useState('');
-  const [editHospitalType, setEditHospitalType] = useState('');
-  const [editDescription, setEditDescription] = useState('');
   const [editError, setEditError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchHospitals();
     if (role === 'hospital_admin') {
-      fetchMyHospital().catch(() => {}); // no hospital linked yet — fine, edit button just won't show
+      fetchMyHospital().catch(() => {}); // no hospital linked yet â€” fine, edit button just won't show
     }
   }, [fetchHospitals, fetchMyHospital, role]);
-
-  useEffect(() => {
-    if (!highlightId || !hospitals) return;
-    const el = document.getElementById(`hospital-${highlightId}`);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    const match = hospitals.find((h) => h.id === highlightId);
-    if (match) setSelectedHospital(match);
-  }, [highlightId, hospitals]);
 
   // cascading options (create modal)
   const districts = useMemo<District[]>(() => {
@@ -125,8 +92,7 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
   const handleOpenModal = () => {
     fetchTree();
     setName(''); setProvinceId(''); setDistrictId(''); setMunicipalityId('');
-    setAddress(''); setPhone(''); setEmail(''); setWebsite(''); setHospitalType(''); setDescription('');
-    setCreateError(null);
+    setAddress(''); setPhone(''); setCreateError(null);
     setIsModalOpen(true);
   };
 
@@ -158,10 +124,6 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
         municipalityId,
         address: address.trim() || undefined,
         phone: phone.trim() || undefined,
-        email: email.trim() || undefined,
-        website: website.trim() || undefined,
-        hospitalType: hospitalType || undefined,
-        description: description.trim() || undefined,
       });
       const newHospital = result.hospital;
       setHospitals(hospitals ? [...hospitals, newHospital] : [newHospital]);
@@ -171,20 +133,15 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
     }
   };
 
-  // works for both: hospital_admin editing their own hospital, and admin editing any hospital
-  const handleOpenEditModal = async (hospital: Hospital) => {
+  const handleOpenEditModal = async () => {
+    if (!myHospital) return;
     await fetchTree();
-    setEditingHospitalId(hospital.id);
-    setEditName(hospital.name);
-    setEditAddress(hospital.address || '');
-    setEditPhone(hospital.phone || '');
-    setEditEmail(hospital.email || '');
-    setEditWebsite(hospital.website || '');
-    setEditHospitalType(hospital.hospitalType || '');
-    setEditDescription(hospital.description || '');
-    const prov = hospital.municipality?.district?.province?.id || '';
-    const dist = hospital.municipality?.district?.id || '';
-    const muni = hospital.municipality?.id || '';
+    setEditName(myHospital.name);
+    setEditAddress(myHospital.address || '');
+    setEditPhone(myHospital.phone || '');
+    const prov = myHospital.municipality?.district?.province?.id || '';
+    const dist = myHospital.municipality?.district?.id || '';
+    const muni = myHospital.municipality?.id || '';
     setEditProvinceId(prov);
     setEditDistrictId(dist);
     setEditMunicipalityId(muni);
@@ -207,35 +164,27 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
     e.preventDefault();
     setEditError(null);
 
-    if (!editingHospitalId) return;
+    if (!myHospital) return;
     if (!editName.trim()) { setEditError('Hospital name is required.'); return; }
     if (!editProvinceId || !editDistrictId || !editMunicipalityId) {
       setEditError('Please select a province, district, and municipality.'); return;
     }
 
     try {
-      const result = await updateHospital(editingHospitalId, {
+      const result = await updateHospital(myHospital.id, {
         name: editName.trim(),
         provinceId: editProvinceId,
         districtId: editDistrictId,
         municipalityId: editMunicipalityId,
         address: editAddress.trim() || undefined,
         phone: editPhone.trim() || undefined,
-        email: editEmail.trim() || undefined,
-        website: editWebsite.trim() || undefined,
-        hospitalType: editHospitalType || undefined,
-        description: editDescription.trim() || undefined,
       });
       const updated = result.hospital;
-      if (myHospital && myHospital.id === updated.id) setMyHospital(updated);
+      setMyHospital(updated);
       if (hospitals) {
         setHospitals(hospitals.map((h) => (h.id === updated.id ? { ...h, ...updated } : h)));
       }
-      if (selectedHospital && selectedHospital.id === updated.id) {
-        setSelectedHospital({ ...selectedHospital, ...updated });
-      }
       setIsEditModalOpen(false);
-      setEditingHospitalId(null);
     } catch (err: unknown) {
       setEditError(err instanceof Error ? err.message : 'Failed to update hospital');
     }
@@ -285,32 +234,13 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
           {hospitals.map((hospital: Hospital) => (
             <div
               key={hospital.id}
-              id={`hospital-${hospital.id}`}
-              onClick={() => setSelectedHospital(hospital)}
-              role="button"
-              tabIndex={0}
-              className={cn(
-                "bg-white p-6 rounded-xl border shadow-sm hover:shadow-md hover:border-primary/25 hover:-translate-y-1 transition-all duration-200 cursor-pointer",
-                hospital.id === highlightId ? "border-primary ring-2 ring-primary/30" : "border-slate-100"
-              )}
+              className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md hover:border-primary/25 hover:-translate-y-1 transition-all duration-200"
             >
               <div className="flex justify-between items-start gap-2">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-800 tracking-tight">{hospital.name}</h3>
-                  {hospitalTypeLabel(hospital.hospitalType) && (
-                    <span className="inline-block mt-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-secondary-light text-secondary">
-                      {hospitalTypeLabel(hospital.hospitalType)}
-                    </span>
-                  )}
-                </div>
+                <h3 className="text-lg font-bold text-slate-800 tracking-tight">{hospital.name}</h3>
                 <div className="flex items-center gap-2 shrink-0">
                   {role === 'hospital_admin' && myHospital && myHospital.id === hospital.id && (
-                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleOpenEditModal(hospital); }}>
-                      Edit
-                    </Button>
-                  )}
-                  {role === 'admin' && (
-                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleOpenEditModal(hospital); }}>
+                    <Button size="sm" variant="outline" onClick={handleOpenEditModal}>
                       Edit
                     </Button>
                   )}
@@ -318,7 +248,7 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/hospitals/${hospital.id}/manage`); }}
+                      onClick={() => router.push(`/dashboard/hospitals/${hospital.id}/manage`)}
                     >
                       Manage
                     </Button>
@@ -328,7 +258,7 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
                       size="sm"
                       variant="ghost"
                       disabled={deletingId === hospital.id}
-                      onClick={(e) => { e.stopPropagation(); handleDeleteHospital(hospital); }}
+                      onClick={() => handleDeleteHospital(hospital)}
                     >
                       {deletingId === hospital.id ? <Spinner size="sm" /> : 'Delete'}
                     </Button>
@@ -392,118 +322,6 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
         </div>
       )}
 
-      {/* Hospital Detail Modal (public) */}
-      {selectedHospital && (
-        <div
-          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={() => setSelectedHospital(null)}
-        >
-          <div
-            className="bg-white rounded-2xl p-6 max-w-md w-full border border-slate-100 shadow-xl max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-start mb-5">
-              <div>
-                <span className="inline-block text-xs font-bold uppercase tracking-wider text-primary mb-1">
-                  Hospital
-                </span>
-                <h3 className="text-xl font-bold text-slate-800">{selectedHospital.name}</h3>
-                {hospitalTypeLabel(selectedHospital.hospitalType) && (
-                  <span className="inline-block mt-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-secondary-light text-secondary">
-                    {hospitalTypeLabel(selectedHospital.hospitalType)}
-                  </span>
-                )}
-              </div>
-              <button onClick={() => setSelectedHospital(null)} className="text-slate-400 hover:text-slate-600">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {selectedHospital.description && (
-              <p className="text-sm text-slate-600 mb-5 leading-relaxed">{selectedHospital.description}</p>
-            )}
-
-            <div className="space-y-4 text-sm">
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-primary shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <div>
-                  <p className="font-semibold text-slate-700">{locationLabel(selectedHospital)}</p>
-                  {selectedHospital.address && (
-                    <p className="text-slate-500 text-xs mt-0.5">{selectedHospital.address}</p>
-                  )}
-                </div>
-              </div>
-
-              {selectedHospital.phone ? (
-                <div className="flex items-center gap-3">
-                  <svg className="w-5 h-5 text-secondary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
-                  <a href={`tel:${selectedHospital.phone}`} className="font-semibold text-slate-700 hover:text-primary">
-                    {selectedHospital.phone}
-                  </a>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3 text-slate-400">
-                  <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
-                  <span>Phone not listed</span>
-                </div>
-              )}
-
-              {selectedHospital.email && (
-                <div className="flex items-center gap-3">
-                  <svg className="w-5 h-5 text-secondary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  <a href={`mailto:${selectedHospital.email}`} className="font-semibold text-slate-700 hover:text-primary break-all">
-                    {selectedHospital.email}
-                  </a>
-                </div>
-              )}
-
-              {selectedHospital.website && (
-                <div className="flex items-center gap-3">
-                  <svg className="w-5 h-5 text-secondary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18" />
-                  </svg>
-                  <a
-                    href={selectedHospital.website.startsWith('http') ? selectedHospital.website : `https://${selectedHospital.website}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-slate-700 hover:text-primary break-all"
-                  >
-                    {selectedHospital.website}
-                  </a>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-slate-100 flex gap-3">
-              {(role === 'admin' || (role === 'hospital_admin' && myHospital?.id === selectedHospital.id)) && (
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => { const h = selectedHospital; setSelectedHospital(null); handleOpenEditModal(h); }}
-                >
-                  Edit Details
-                </Button>
-              )}
-              <Button variant="outline" className="flex-1" onClick={() => setSelectedHospital(null)}>
-                Close
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Create Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -535,21 +353,6 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
               />
 
               <div>
-                <FieldLabel>Hospital Type (optional)</FieldLabel>
-                <select
-                  value={hospitalType}
-                  onChange={(e) => setHospitalType(e.target.value)}
-                  className={SELECT_CLS}
-                  disabled={isCreating}
-                >
-                  <option value="">Select Type</option>
-                  {HOSPITAL_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
                 <FieldLabel>Province</FieldLabel>
                 <select
                   value={provinceId}
@@ -559,7 +362,7 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
                   required
                 >
                   <option value="">
-                    {!locationTree ? 'Loading provinces…' : 'Select Province'}
+                    {!locationTree ? 'Loading provincesâ€¦' : 'Select Province'}
                   </option>
                   {locationTree?.map((p: Province) => (
                     <option key={p.id} value={p.id}>{p.name}</option>
@@ -615,35 +418,6 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
                 disabled={isCreating}
               />
 
-              <Input
-                label="Email (optional)"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="e.g. info@hospital.com"
-                disabled={isCreating}
-              />
-
-              <Input
-                label="Website (optional)"
-                value={website}
-                onChange={(e) => setWebsite(e.target.value)}
-                placeholder="e.g. www.hospital.com"
-                disabled={isCreating}
-              />
-
-              <div>
-                <FieldLabel>About / Description (optional)</FieldLabel>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className={TEXTAREA_CLS}
-                  rows={3}
-                  placeholder="Brief description of the hospital's services and facilities"
-                  disabled={isCreating}
-                />
-              </div>
-
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                 <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)} disabled={isCreating}>
                   Cancel
@@ -657,14 +431,14 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
         </div>
       )}
 
-      {/* Edit Modal — works for hospital_admin (own hospital) and admin (any hospital) */}
-      {isEditModalOpen && editingHospitalId && (
+      {/* Edit Modal (hospital_admin's own hospital) */}
+      {isEditModalOpen && myHospital && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-lg w-full border border-slate-100 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h3 className="text-lg font-bold text-slate-800">Edit Hospital Details</h3>
-                <p className="text-slate-400 text-xs mt-0.5">Update location, contact, and profile info.</p>
+                <p className="text-slate-400 text-xs mt-0.5">Update your hospital's location and contact info.</p>
               </div>
               <button onClick={() => setIsEditModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -687,21 +461,6 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
               />
 
               <div>
-                <FieldLabel>Hospital Type (optional)</FieldLabel>
-                <select
-                  value={editHospitalType}
-                  onChange={(e) => setEditHospitalType(e.target.value)}
-                  className={SELECT_CLS}
-                  disabled={isUpdating}
-                >
-                  <option value="">Select Type</option>
-                  {HOSPITAL_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
                 <FieldLabel>Province</FieldLabel>
                 <select
                   value={editProvinceId}
@@ -711,7 +470,7 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
                   required
                 >
                   <option value="">
-                    {!locationTree ? 'Loading provinces…' : 'Select Province'}
+                    {!locationTree ? 'Loading provincesâ€¦' : 'Select Province'}
                   </option>
                   {locationTree?.map((p: Province) => (
                     <option key={p.id} value={p.id}>{p.name}</option>
@@ -765,35 +524,6 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
                 disabled={isUpdating}
               />
 
-              <Input
-                label="Email (optional)"
-                type="email"
-                value={editEmail}
-                onChange={(e) => setEditEmail(e.target.value)}
-                placeholder="e.g. info@hospital.com"
-                disabled={isUpdating}
-              />
-
-              <Input
-                label="Website (optional)"
-                value={editWebsite}
-                onChange={(e) => setEditWebsite(e.target.value)}
-                placeholder="e.g. www.hospital.com"
-                disabled={isUpdating}
-              />
-
-              <div>
-                <FieldLabel>About / Description (optional)</FieldLabel>
-                <textarea
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  className={TEXTAREA_CLS}
-                  rows={3}
-                  placeholder="Brief description of the hospital's services and facilities"
-                  disabled={isUpdating}
-                />
-              </div>
-
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                 <Button type="button" variant="ghost" onClick={() => setIsEditModalOpen(false)} disabled={isUpdating}>
                   Cancel
@@ -809,3 +539,5 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
     </div>
   );
 }
+
+

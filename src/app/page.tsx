@@ -380,7 +380,7 @@ function PartnerHospitalsSection() {
                   {hospital.phone ?? "Phone not listed"}
                 </p>
                 <Link
-                  href="/health-directory"
+                  href={`/health-directory?hospital=${hospital.id}`}
                   className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:text-primary-hover"
                 >
                   View details &rarr;
@@ -483,12 +483,12 @@ function ContactCtaSection() {
           </div>
         </div>
         <div className="flex flex-wrap justify-center gap-3">
-          <a
+<a
             href="tel:+97714440000"
             className="inline-flex items-center justify-center px-6 py-3 text-lg rounded-lg font-medium bg-white text-secondary hover:bg-slate-100 transition-colors"
           >
             Call +977-1-4440000
-          </a>
+            </a>
           <Link
             href="/contact"
             className="inline-flex items-center justify-center px-6 py-3 text-lg rounded-lg font-medium border-2 border-white text-white hover:bg-white/10 transition-colors"
