@@ -28,6 +28,7 @@ export interface Doctor {
   userId: string;
   nmcNumber: string;
   specialisationId: string | null;
+  imageUrl?: string | null;
   isApproved: boolean;
   createdAt: string;
   updatedAt: string;

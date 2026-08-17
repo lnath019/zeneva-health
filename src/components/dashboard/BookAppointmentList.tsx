@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
 import { useAuth } from "@/context/AuthContext";
-import { slotApi, appointmentApi, medicalHistoryApi } from "@/lib/api";
+import { slotApi, appointmentApi, medicalHistoryApi, doctorApi } from "@/lib/api";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Spinner } from "../ui/Spinner";
@@ -12,15 +12,17 @@ import { Slot } from "@/types";
 
 interface DoctorGroup {
   doctorId: string;
+  doctorUserId: string | null;
   doctorName: string;
   specialisationName: string;
+  imageUrl: string | null;
   slots: Slot[];
 }
 
 export function BookAppointment() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { token } = useAuth();
+  const { token, userId, role } = useAuth();
   const {
     data: slots,
     isLoading,
@@ -44,6 +46,12 @@ export function BookAppointment() {
 
   const [expandedDoctorIds, setExpandedDoctorIds] = useState<Set<string>>(new Set());
 
+  // local override so the photo updates instantly after upload, without a full refetch
+  const [imageOverrides, setImageOverrides] = useState<Record<string, string>>({});
+  const [uploadingDoctorId, setUploadingDoctorId] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
   const toggleDoctorExpanded = (doctorId: string) => {
     setExpandedDoctorIds((prev) => {
       const next = new Set(prev);
@@ -54,6 +62,29 @@ export function BookAppointment() {
       }
       return next;
     });
+  };
+
+  const handleAvatarClick = (e: React.MouseEvent, doctorId: string) => {
+    e.stopPropagation();
+    fileInputRefs.current[doctorId]?.click();
+  };
+
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>, doctorId: string) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file later
+    if (!file) return;
+
+    setUploadError(null);
+    setUploadingDoctorId(doctorId);
+    try {
+      const imageUrl = await doctorApi.uploadImage(file);
+      await doctorApi.updateMyProfile({ imageUrl });
+      setImageOverrides((prev) => ({ ...prev, [doctorId]: imageUrl }));
+    } catch (err: unknown) {
+      setUploadError(err instanceof Error ? err.message : "Failed to upload photo");
+    } finally {
+      setUploadingDoctorId(null);
+    }
   };
 
 useEffect(() => {
@@ -183,8 +214,10 @@ useEffect(() => {
       if (!map.has(doctorId)) {
         map.set(doctorId, {
           doctorId,
+          doctorUserId: slot.doctor?.user?.id ?? null,
           doctorName: slot.doctor?.user?.fullName || "Specialist Doctor",
           specialisationName: slot.doctor?.specialisation?.name || "General Practitioner",
+          imageUrl: slot.doctor?.imageUrl ?? null,
           slots: [],
         });
       }
@@ -214,6 +247,12 @@ useEffect(() => {
           Select an available doctor slot and schedule your consultation.
         </p>
       </div>
+
+      {uploadError && (
+        <div className="bg-rose-50 border border-rose-100 text-rose-600 p-3 rounded-lg text-xs font-semibold">
+          {uploadError}
+        </div>
+      )}
 
       {/* Filter / Search Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -293,6 +332,9 @@ useEffect(() => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {doctorGroups.map((group) => {
             const isExpanded = expandedDoctorIds.has(group.doctorId);
+            const isOwnDoctor = role === "doctor" && !!userId && userId === group.doctorUserId;
+            const displayImageUrl = imageOverrides[group.doctorId] ?? group.imageUrl;
+            const isUploadingThis = uploadingDoctorId === group.doctorId;
 
             return (
               <div
@@ -300,15 +342,53 @@ useEffect(() => {
                 className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden"
               >
                 {/* Doctor header — click to expand/collapse */}
-                <button
-                  type="button"
+                <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => toggleDoctorExpanded(group.doctorId)}
-                  className="w-full text-left p-6 flex items-center gap-4 hover:bg-slate-50/60 transition-colors"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") toggleDoctorExpanded(group.doctorId);
+                  }}
+                  className="w-full text-left p-6 flex items-center gap-4 hover:bg-slate-50/60 transition-colors cursor-pointer"
                 >
-                  {/* Avatar placeholder — swap for <img src={doctor.imageUrl} /> once photos exist */}
-                  <div className="w-16 h-16 rounded-full bg-primary-light flex items-center justify-center shrink-0 text-primary font-bold text-xl relative overflow-hidden">
-                    {group.doctorName.replace(/^Dr\.?\s*/i, "").slice(0, 1).toUpperCase() || "D"}
+                  {/* Avatar — shows real photo when set, initial otherwise. Clickable only for the doctor's own card. */}
+                  <div
+                    onClick={isOwnDoctor ? (e) => handleAvatarClick(e, group.doctorId) : undefined}
+                    className={`w-16 h-16 rounded-full bg-primary-light flex items-center justify-center shrink-0 text-primary font-bold text-xl relative overflow-hidden ${isOwnDoctor ? "cursor-pointer group" : ""}`}
+                  >
+                    {displayImageUrl ? (
+                      <img
+                        src={displayImageUrl}
+                        alt={group.doctorName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      group.doctorName.replace(/^Dr\.?\s*/i, "").slice(0, 1).toUpperCase() || "D"
+                    )}
+
+                    {isOwnDoctor && (
+                      <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/40 transition-colors flex items-center justify-center">
+                        {isUploadingThis ? (
+                          <Spinner size="sm" className="text-white" />
+                        ) : (
+                          <svg className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        )}
+                      </div>
+                    )}
                   </div>
+
+                  {isOwnDoctor && (
+                    <input
+                      ref={(el) => { fileInputRefs.current[group.doctorId] = el; }}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      className="hidden"
+                      onChange={(e) => handleFileSelected(e, group.doctorId)}
+                    />
+                  )}
 
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-bold text-slate-800 tracking-tight truncate">
@@ -330,7 +410,7 @@ useEffect(() => {
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
-                </button>
+                </div>
 
                 {/* Slot list — only rendered when expanded */}
                 {isExpanded && (

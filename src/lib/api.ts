@@ -257,9 +257,46 @@ export const slotApi = {
     return apiRequest<HospitalDoctorSchedule[]>(`/doctor/slots/hospital/schedule${qs}`);
   },
 };
+
 export const doctorApi = {
   getSpecialisations: async () => {
     return apiRequest<Specialisation[]>('/doctor/specialisations');
+  },
+  getMyProfile: async () => {
+    return apiRequest<{ id: string; imageUrl: string | null }>('/doctor/me');
+  },
+  uploadImage: async (file: File) => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('zeneva_token') : null;
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const response = await fetch(`${API_BASE_URL}/doctor/upload-image`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      body: formData,
+    });
+
+    const text = await response.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      data = { message: text };
+    }
+
+    if (!response.ok) {
+      throw new Error(data.message || `Upload failed with status ${response.status}`);
+    }
+
+    // backend returns a relative path like /uploads/doctors/xyz.jpg —
+    // prefix with API_BASE_URL so it's a usable absolute URL
+    return `${API_BASE_URL}${data.imageUrl}` as string;
+  },
+  updateMyProfile: async (data: { imageUrl?: string | null }) => {
+    return apiRequest<{ message: string; doctor: unknown }>('/doctor/me', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
   },
 };
 
