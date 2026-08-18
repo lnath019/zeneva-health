@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
 import { useAuth } from "@/context/AuthContext";
-import { slotApi, appointmentApi, medicalHistoryApi, doctorApi } from "@/lib/api";
+import { slotApi, appointmentApi, medicalHistoryApi, doctorApi, mediaUrl } from "@/lib/api";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Spinner } from "../ui/Spinner";
@@ -44,25 +44,11 @@ export function BookAppointment() {
   const [selectedRecordIds, setSelectedRecordIds] = useState<string[]>([]);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
-  const [expandedDoctorIds, setExpandedDoctorIds] = useState<Set<string>>(new Set());
-
   // local override so the photo updates instantly after upload, without a full refetch
   const [imageOverrides, setImageOverrides] = useState<Record<string, string>>({});
   const [uploadingDoctorId, setUploadingDoctorId] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
-
-  const toggleDoctorExpanded = (doctorId: string) => {
-    setExpandedDoctorIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(doctorId)) {
-        next.delete(doctorId);
-      } else {
-        next.add(doctorId);
-      }
-      return next;
-    });
-  };
 
   const handleAvatarClick = (e: React.MouseEvent, doctorId: string) => {
     e.stopPropagation();
@@ -105,10 +91,6 @@ useEffect(() => {
       setReason("");
       setSelectedRecordIds([]);
       setBookingError(null);
-      const doctorId = pendingSlot.doctor?.id ?? pendingSlot.doctorId;
-      if (doctorId) {
-        setExpandedDoctorIds((prev) => new Set(prev).add(doctorId));
-      }
     }
     router.replace("/book-doctor");
   }, [searchParams, token, slots, router]);
@@ -331,7 +313,6 @@ useEffect(() => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {doctorGroups.map((group) => {
-            const isExpanded = expandedDoctorIds.has(group.doctorId);
             const isOwnDoctor = role === "doctor" && !!userId && userId === group.doctorUserId;
             const displayImageUrl = imageOverrides[group.doctorId] ?? group.imageUrl;
             const isUploadingThis = uploadingDoctorId === group.doctorId;
@@ -345,9 +326,9 @@ useEffect(() => {
                 <div
                   role="button"
                   tabIndex={0}
-                  onClick={() => toggleDoctorExpanded(group.doctorId)}
+                  onClick={() => router.push(`/doctors/${group.doctorId}`)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") toggleDoctorExpanded(group.doctorId);
+                    if (e.key === "Enter" || e.key === " ") router.push(`/doctors/${group.doctorId}`);
                   }}
                   className="w-full text-left p-6 flex items-center gap-4 hover:bg-slate-50/60 transition-colors cursor-pointer"
                 >
@@ -357,8 +338,9 @@ useEffect(() => {
                     className={`w-16 h-16 rounded-full bg-primary-light flex items-center justify-center shrink-0 text-primary font-bold text-xl relative overflow-hidden ${isOwnDoctor ? "cursor-pointer group" : ""}`}
                   >
                     {displayImageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={displayImageUrl}
+                        src={mediaUrl(displayImageUrl) ?? undefined}
                         alt={group.doctorName}
                         className="w-full h-full object-cover"
                       />
@@ -403,17 +385,18 @@ useEffect(() => {
                   </div>
 
                   <svg
-                    className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                    className="w-5 h-5 text-slate-400 shrink-0"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
+                    aria-hidden="true"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
 
-                {/* Slot list — only rendered when expanded */}
-                {isExpanded && (
+                {/* Slot list — always visible; the card header opens the full profile */}
+                {(
                   <div className="divide-y divide-slate-50 max-h-80 overflow-y-auto border-t border-slate-50">
                     {group.slots.map((slot) => {
                       const booked = slot.bookedTokens ?? 0;
@@ -454,6 +437,14 @@ useEffect(() => {
                         </div>
                       );
                     })}
+
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/doctors/${group.doctorId}`)}
+                      className="w-full p-3 text-xs font-semibold text-primary hover:bg-slate-50 transition-colors"
+                    >
+                      View full profile, schedule &amp; reviews →
+                    </button>
                   </div>
                 )}
               </div>

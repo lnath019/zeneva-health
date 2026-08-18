@@ -29,6 +29,7 @@ export interface Doctor {
   nmcNumber: string;
   specialisationId: string | null;
   imageUrl?: string | null;
+  bio?: string | null;
   isApproved: boolean;
   createdAt: string;
   updatedAt: string;
@@ -42,6 +43,59 @@ export interface Doctor {
     isActive: boolean;
   };
   specialisation?: Specialisation | null;
+}
+
+export interface DoctorDegree {
+  id: string;
+  doctorId: string;
+  degreeName: string;
+  institution: string | null;
+  yearCompleted: string | null;
+  createdAt: string;
+}
+
+export interface OpdSchedule {
+  id: string;
+  hospitalId: string;
+  doctorId: string;
+  dayOfWeek: 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday';
+  startTime: string;
+  endTime: string;
+  hospital?: Hospital;
+  doctor?: Doctor;      // included when fetched via a hospital's detail payload
+}
+
+export interface RatingSummary {
+  average: number;
+  total: number;
+  distribution?: Record<string, number>;
+}
+
+export interface DoctorReview {
+  id: string;
+  doctorId: string;
+  patientId: string;
+  appointmentId: string | null;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  updatedAt: string;
+  patient?: { id: string; fullName: string };
+}
+
+export interface ReviewEligibility {
+  canReview: boolean;
+  hasCompletedVisit: boolean;
+  myReview: DoctorReview | null;
+}
+
+// GET /doctor/:id — the whole detail page in one payload
+export interface DoctorDetail extends Doctor {
+  degrees: DoctorDegree[];
+  hospitals: Hospital[];
+  slots: Slot[];
+  opdSchedule: OpdSchedule[];
+  rating: RatingSummary;
 }
 
 export type DoctorHospitalStatus = 'pending' | 'approved' | 'rejected';
@@ -60,6 +114,25 @@ export interface HospitalSlotSummary {
 export interface HospitalDoctorSchedule {
   doctor: Doctor;
   slots: HospitalSlotSummary[];
+}
+
+export interface HospitalImage {
+  id: string;
+  hospitalId: string;
+  imageUrl: string;
+  caption: string | null;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// GET /hospitals/:id — the whole hospital detail page in one payload
+export interface HospitalDetail extends Hospital {
+  images: HospitalImage[];
+  doctors: DoctorDetail[];
+  slots: Slot[];
+  opdSchedule: OpdSchedule[];
+  doctorRating: RatingSummary;
 }
 
 export interface DoctorHospitalLink {
@@ -156,6 +229,7 @@ export interface Hospital {
   website: string | null;
   hospitalType: 'general' | 'multi_specialty' | 'clinic' | 'nursing_home' | 'diagnostic_center' | null;
   description: string | null;
+  imageUrl?: string | null;
   createdAt?: string;
   updatedAt?: string;
   municipality?: {

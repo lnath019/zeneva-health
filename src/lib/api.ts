@@ -1,6 +1,18 @@
-import { Hospital, Ambulance, Slot, Appointment, AppointmentTicket, Specialisation, User, UserProfile, Province, Lab, LabSlot, LabAppointment, Test, MedicalHistoryRecord, RecordCategory, DoctorHospitalLink, HospitalDoctorSchedule } from '@/types';
+import { Hospital, Ambulance, Slot, Appointment, AppointmentTicket, Specialisation, User, UserProfile, Province, Lab, LabSlot, LabAppointment, Test, MedicalHistoryRecord, RecordCategory, DoctorHospitalLink, HospitalDoctorSchedule, DoctorDetail, DoctorReview, RatingSummary, ReviewEligibility, HospitalDetail, HospitalImage } from '@/types';
+import { getToken } from '@/lib/auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.zenivahealthcare.com';
+
+/**
+ * Resolve an image path returned by the API into something the browser can load.
+ * Uploads are stored relative (/uploads/...) so they stay portable across
+ * environments; they're served by the API origin, not the Next.js one, so a
+ * bare relative path would 404 against the frontend host.
+ */
+export function mediaUrl(path?: string | null): string | null {
+  if (!path) return null;
+  return /^https?:\/\//i.test(path) ? path : `${API_BASE_URL}${path}`;
+}
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -13,7 +25,7 @@ export async function apiRequest<T = unknown>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('zeneva_token') : null;
+  const token = typeof window !== 'undefined' ? getToken() : null;
   
   const headers = new Headers(options.headers);
   if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
@@ -145,6 +157,44 @@ export const hospitalApi = {
       method: 'DELETE',
     });
   },
+  getById: async (id: string) => {
+    return apiRequest<HospitalDetail>(`/hospitals/${id}`);
+  },
+  // ── image gallery ──
+  listImages: async (hospitalId: string) => {
+    return apiRequest<HospitalImage[]>(`/hospitals/${hospitalId}/images`);
+  },
+  addImage: async (hospitalId: string, file: File, caption?: string) => {
+    const token = typeof window !== 'undefined' ? getToken() : null;
+    const formData = new FormData();
+    formData.append('image', file);
+    if (caption) formData.append('caption', caption);
+
+    const response = await fetch(`${API_BASE_URL}/hospitals/${hospitalId}/images`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      body: formData,
+    });
+
+    const text = await response.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      data = { message: text };
+    }
+    if (!response.ok) throw new Error(data.message || `Upload failed with status ${response.status}`);
+    return data.image as HospitalImage;
+  },
+  updateImage: async (hospitalId: string, imageId: string, data: { caption?: string | null; sortOrder?: number; isCover?: boolean }) => {
+    return apiRequest<{ message: string; image: HospitalImage }>(`/hospitals/${hospitalId}/images/${imageId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+  deleteImage: async (hospitalId: string, imageId: string) => {
+    return apiRequest<{ message: string }>(`/hospitals/${hospitalId}/images/${imageId}`, { method: 'DELETE' });
+  },
 };
 
 export const locationApi = {
@@ -266,7 +316,7 @@ export const doctorApi = {
     return apiRequest<{ id: string; imageUrl: string | null }>('/doctor/me');
   },
   uploadImage: async (file: File) => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('zeneva_token') : null;
+    const token = typeof window !== 'undefined' ? getToken() : null;
     const formData = new FormData();
     formData.append('image', file);
 
@@ -288,14 +338,45 @@ export const doctorApi = {
       throw new Error(data.message || `Upload failed with status ${response.status}`);
     }
 
-    // backend returns a relative path like /uploads/doctors/xyz.jpg —
-    // prefix with API_BASE_URL so it's a usable absolute URL
-    return `${API_BASE_URL}${data.imageUrl}` as string;
+    // hand back the relative path exactly as stored — callers render it
+    // through mediaUrl(), so the origin isn't baked into the database
+    return data.imageUrl as string;
   },
-  updateMyProfile: async (data: { imageUrl?: string | null }) => {
+  updateMyProfile: async (data: { imageUrl?: string | null; bio?: string | null }) => {
     return apiRequest<{ message: string; doctor: unknown }>('/doctor/me', {
       method: 'PATCH',
       body: JSON.stringify(data),
+    });
+  },
+  getById: async (doctorId: string) => {
+    return apiRequest<DoctorDetail>(`/doctor/${doctorId}`);
+  },
+};
+
+export const reviewApi = {
+  listForDoctor: async (doctorId: string, limit = 20, offset = 0) => {
+    return apiRequest<{ reviews: DoctorReview[]; summary: RatingSummary; limit: number; offset: number }>(
+      `/reviews/doctor/${doctorId}?limit=${limit}&offset=${offset}`,
+    );
+  },
+  myEligibility: async (doctorId: string) => {
+    return apiRequest<ReviewEligibility>(`/reviews/doctor/${doctorId}/me`);
+  },
+  create: async (doctorId: string, rating: number, comment: string) => {
+    return apiRequest<{ message: string; review: DoctorReview; summary: RatingSummary }>(
+      `/reviews/doctor/${doctorId}`,
+      { method: 'POST', body: JSON.stringify({ rating, comment }) },
+    );
+  },
+  update: async (reviewId: string, data: { rating?: number; comment?: string }) => {
+    return apiRequest<{ message: string; review: DoctorReview; summary: RatingSummary }>(
+      `/reviews/${reviewId}`,
+      { method: 'PATCH', body: JSON.stringify(data) },
+    );
+  },
+  remove: async (reviewId: string) => {
+    return apiRequest<{ message: string; summary: RatingSummary }>(`/reviews/${reviewId}`, {
+      method: 'DELETE',
     });
   },
 };
@@ -684,7 +765,7 @@ export const productApi = {
     return apiRequest<{ products: BackendProduct[] }>('/products/admin');
   },
   uploadImage: async (file: File) => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('zeneva_token') : null;
+    const token = typeof window !== 'undefined' ? getToken() : null;
     const formData = new FormData();
     formData.append('image', file);
 
