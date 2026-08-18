@@ -380,7 +380,7 @@ function PartnerHospitalsSection() {
                   {hospital.phone ?? "Phone not listed"}
                 </p>
                 <Link
-                  href={`/health-directory?hospital=${hospital.id}`}
+                  href={`/hospitals/${hospital.id}`}
                   className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:text-primary-hover"
                 >
                   View details &rarr;

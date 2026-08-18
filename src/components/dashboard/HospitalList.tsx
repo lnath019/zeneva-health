@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useApi } from '@/hooks/useApi';
-import { hospitalApi, locationApi } from '@/lib/api';
+import { hospitalApi, locationApi, mediaUrl } from '@/lib/api';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Spinner } from '../ui/Spinner';
@@ -43,6 +43,25 @@ function locationLabel(hospital: Hospital): string {
   return parts.join(', ');
 }
 
+// Card banner. Falls back to a building mark when a hospital has no photo,
+// or when the stored path no longer resolves.
+function HospitalCardImage({ src, alt }: { src: string | null; alt: string }) {
+  const [failed, setFailed] = useState(false);
+
+  return (
+    <div className="-mx-6 mb-5 h-36 bg-primary-light flex items-center justify-center overflow-hidden">
+      {src && !failed ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt={alt} className="w-full h-full object-cover" onError={() => setFailed(true)} />
+      ) : (
+        <svg className="w-10 h-10 text-primary/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+      )}
+    </div>
+  );
+}
+
 export function HospitalList({ highlightId }: { highlightId?: string | null }) {
   const { role } = useAuth();
   const router = useRouter();
@@ -57,7 +76,8 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingHospitalId, setEditingHospitalId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [selectedHospital, setSelectedHospital] = useState<Hospital | null>(null);
+
+  const [searchQuery, setSearchQuery] = useState('');
 
   // create form fields
   const [name, setName] = useState('');
@@ -94,11 +114,32 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
 
   useEffect(() => {
     if (!highlightId || !hospitals) return;
+    // ?hospital=<id> now scrolls to and highlights the card; the full details
+    // live on their own page, which the card links through to
     const el = document.getElementById(`hospital-${highlightId}`);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    const match = hospitals.find((h) => h.id === highlightId);
-    if (match) setSelectedHospital(match);
   }, [highlightId, hospitals]);
+
+  // client-side search across everything visible on the card
+  const visibleHospitals = useMemo<Hospital[]>(() => {
+    if (!hospitals) return [];
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return hospitals;
+
+    return hospitals.filter((h: Hospital) => {
+      const m = h.municipality;
+      return [
+        h.name,
+        h.address,
+        hospitalTypeLabel(h.hospitalType),
+        m?.name,
+        m?.district?.name,
+        m?.district?.province?.name,
+      ]
+        .filter(Boolean)
+        .some((field) => String(field).toLowerCase().includes(q));
+    });
+  }, [hospitals, searchQuery]);
 
   // cascading options (create modal)
   const districts = useMemo<District[]>(() => {
@@ -231,9 +272,6 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
       if (hospitals) {
         setHospitals(hospitals.map((h) => (h.id === updated.id ? { ...h, ...updated } : h)));
       }
-      if (selectedHospital && selectedHospital.id === updated.id) {
-        setSelectedHospital({ ...selectedHospital, ...updated });
-      }
       setIsEditModalOpen(false);
       setEditingHospitalId(null);
     } catch (err: unknown) {
@@ -269,6 +307,35 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
         )}
       </div>
 
+      {/* Search */}
+      <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+        <label htmlFor="directory-search" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+          Search hospitals
+        </label>
+        <div className="relative">
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
+            fill="none" viewBox="0 0 24 24" stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+          </svg>
+          <input
+            id="directory-search"
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by name, location, address or type..."
+            className="w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm text-slate-800 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary h-[38px]"
+          />
+        </div>
+        {searchQuery && (
+          <p className="text-xs text-slate-500 mt-2">
+            {visibleHospitals.length} of {hospitals?.length ?? 0} hospital{(hospitals?.length ?? 0) !== 1 ? 's' : ''} match
+            {visibleHospitals.length === 0 && ' — try a different term'}
+          </p>
+        )}
+      </div>
+
       {/* List */}
       {isLoading ? (
         <div className="flex justify-center items-center py-12"><Spinner size="lg" /></div>
@@ -276,24 +343,29 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
         <div className="bg-red-50 border border-red-200 text-red-600 p-6 rounded-xl text-sm font-medium">
           Error loading hospitals: {error}
         </div>
-      ) : !hospitals || hospitals.length === 0 ? (
+      ) : visibleHospitals.length === 0 ? (
         <div className="bg-white border border-slate-100 rounded-xl p-12 text-center text-slate-500 font-medium">
-          No hospitals found in the network.
+          {searchQuery ? 'No hospitals match your search.' : 'No hospitals found in the network.'}
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {hospitals.map((hospital: Hospital) => (
+          {visibleHospitals.map((hospital: Hospital) => (
             <div
               key={hospital.id}
               id={`hospital-${hospital.id}`}
-              onClick={() => setSelectedHospital(hospital)}
+              onClick={() => router.push(`/hospitals/${hospital.id}`)}
               role="button"
               tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') router.push(`/hospitals/${hospital.id}`);
+              }}
               className={cn(
-                "bg-white p-6 rounded-xl border shadow-sm hover:shadow-md hover:border-primary/25 hover:-translate-y-1 transition-all duration-200 cursor-pointer",
+                "bg-white p-6 pt-0 rounded-xl border shadow-sm hover:shadow-md hover:border-primary/25 hover:-translate-y-1 transition-all duration-200 cursor-pointer overflow-hidden",
                 hospital.id === highlightId ? "border-primary ring-2 ring-primary/30" : "border-slate-100"
               )}
             >
+              <HospitalCardImage src={mediaUrl(hospital.imageUrl)} alt={hospital.name} />
+
               <div className="flex justify-between items-start gap-2">
                 <div>
                   <h3 className="text-lg font-bold text-slate-800 tracking-tight">{hospital.name}</h3>
@@ -392,117 +464,6 @@ export function HospitalList({ highlightId }: { highlightId?: string | null }) {
         </div>
       )}
 
-      {/* Hospital Detail Modal (public) */}
-      {selectedHospital && (
-        <div
-          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={() => setSelectedHospital(null)}
-        >
-          <div
-            className="bg-white rounded-2xl p-6 max-w-md w-full border border-slate-100 shadow-xl max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-start mb-5">
-              <div>
-                <span className="inline-block text-xs font-bold uppercase tracking-wider text-primary mb-1">
-                  Hospital
-                </span>
-                <h3 className="text-xl font-bold text-slate-800">{selectedHospital.name}</h3>
-                {hospitalTypeLabel(selectedHospital.hospitalType) && (
-                  <span className="inline-block mt-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-secondary-light text-secondary">
-                    {hospitalTypeLabel(selectedHospital.hospitalType)}
-                  </span>
-                )}
-              </div>
-              <button onClick={() => setSelectedHospital(null)} className="text-slate-400 hover:text-slate-600">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {selectedHospital.description && (
-              <p className="text-sm text-slate-600 mb-5 leading-relaxed">{selectedHospital.description}</p>
-            )}
-
-            <div className="space-y-4 text-sm">
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-primary shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <div>
-                  <p className="font-semibold text-slate-700">{locationLabel(selectedHospital)}</p>
-                  {selectedHospital.address && (
-                    <p className="text-slate-500 text-xs mt-0.5">{selectedHospital.address}</p>
-                  )}
-                </div>
-              </div>
-
-              {selectedHospital.phone ? (
-                <div className="flex items-center gap-3">
-                  <svg className="w-5 h-5 text-secondary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
-                  <a href={`tel:${selectedHospital.phone}`} className="font-semibold text-slate-700 hover:text-primary">
-                    {selectedHospital.phone}
-                  </a>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3 text-slate-400">
-                  <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
-                  <span>Phone not listed</span>
-                </div>
-              )}
-
-              {selectedHospital.email && (
-                <div className="flex items-center gap-3">
-                  <svg className="w-5 h-5 text-secondary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  <a href={`mailto:${selectedHospital.email}`} className="font-semibold text-slate-700 hover:text-primary break-all">
-                    {selectedHospital.email}
-                  </a>
-                </div>
-              )}
-
-              {selectedHospital.website && (
-                <div className="flex items-center gap-3">
-                  <svg className="w-5 h-5 text-secondary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.6 9h16.8M3.6 15h16.8M12 3a15 15 0 010 18M12 3a15 15 0 000 18" />
-                  </svg>
-                  <a
-                    href={selectedHospital.website.startsWith('http') ? selectedHospital.website : `https://${selectedHospital.website}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-slate-700 hover:text-primary break-all"
-                  >
-                    {selectedHospital.website}
-                  </a>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-slate-100 flex gap-3">
-              {(role === 'admin' || (role === 'hospital_admin' && myHospital?.id === selectedHospital.id)) && (
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => { const h = selectedHospital; setSelectedHospital(null); handleOpenEditModal(h); }}
-                >
-                  Edit Details
-                </Button>
-              )}
-              <Button variant="outline" className="flex-1" onClick={() => setSelectedHospital(null)}>
-                Close
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Create Modal */}
       {isModalOpen && (
