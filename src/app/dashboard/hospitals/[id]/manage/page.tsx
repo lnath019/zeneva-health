@@ -3,9 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useApi } from '@/hooks/useApi';
-import { hospitalAdminApi, slotApi, opdScheduleApi, doctorApi, OpdScheduleEntry } from '@/lib/api';
+import { hospitalAdminApi, slotApi, opdScheduleApi, hospitalApi, OpdScheduleEntry } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
+import { HospitalImageManager } from '@/components/dashboard/HospitalImageManager';
 import { HospitalDoctorSchedule } from '@/types';
 
 const DAY_ORDER = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
@@ -14,13 +15,20 @@ const DAY_LABELS: Record<string, string> = {
   thursday: 'Thursday', friday: 'Friday', saturday: 'Saturday',
 };
 
-type Tab = 'doctors' | 'slots' | 'opd';
+type Tab = 'doctors' | 'slots' | 'opd' | 'photos';
 
 export default function ManageHospitalPage() {
   const params = useParams();
   const router = useRouter();
   const hospitalId = String(params.id);
   const [tab, setTab] = useState<Tab>('doctors');
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+
+  // the cover lives on the hospital row, not the gallery — fetch it once so
+  // the Photos tab can mark which image is currently in use
+  useEffect(() => {
+    hospitalApi.getById(hospitalId).then((h) => setCoverUrl(h.imageUrl ?? null)).catch(() => setCoverUrl(null));
+  }, [hospitalId]);
 
   // ── Doctors tab ──
   const { data: doctorLinks, isLoading: doctorsLoading, execute: fetchDoctors, setData: setDoctorLinks } =
@@ -198,7 +206,7 @@ export default function ManageHospitalPage() {
       </div>
 
       <div className="flex gap-2 border-b border-slate-200">
-        {(['doctors', 'slots', 'opd'] as Tab[]).map((t) => (
+        {(['doctors', 'slots', 'opd', 'photos'] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -206,7 +214,7 @@ export default function ManageHospitalPage() {
               tab === t ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            {t === 'doctors' ? 'Doctors' : t === 'slots' ? 'Slots' : 'OPD Schedule'}
+            {t === 'doctors' ? 'Doctors' : t === 'slots' ? 'Slots' : t === 'opd' ? 'OPD Schedule' : 'Photos'}
           </button>
         ))}
       </div>
@@ -327,6 +335,14 @@ export default function ManageHospitalPage() {
       )}
 
       {/* ── OPD TAB ── */}
+      {tab === 'photos' && (
+        <HospitalImageManager
+          hospitalId={hospitalId}
+          coverUrl={coverUrl}
+          onChange={(_images, cover) => setCoverUrl(cover)}
+        />
+      )}
+
       {tab === 'opd' && (
         <div className="space-y-4">
           <div className="flex justify-end">
