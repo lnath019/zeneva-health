@@ -18,8 +18,8 @@ export default function BuyMedicinesPage() {
       try {
         const res = await productApi.getAll();
         setProducts(res.products.map(toCartProduct));
-      } catch (err: any) {
-        setError(err.message || "Failed to load products");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Failed to load products");
       } finally {
         setLoading(false);
       }

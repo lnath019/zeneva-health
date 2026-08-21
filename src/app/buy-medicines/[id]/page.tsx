@@ -57,9 +57,6 @@ export default function ProductDetailsPage({ params }: { params: { id: string } 
     );
   }
 
-  const gallery = [product.image, ...(product.images ?? [])];
-  const [activeImage, setActiveImage] = [0, (i: number) => {}]; // gallery switching kept minimal for now
-
   const handleAdd = () => {
     addToCart(product);
     setJustAdded(true);

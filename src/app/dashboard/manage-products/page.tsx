@@ -33,8 +33,8 @@ export default function ManageProductsPage() {
     try {
       const res = await productApi.getAllAdmin();
       setProducts(res.products);
-    } catch (err: any) {
-      setError(err.message || "Failed to load products");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load products");
     } finally {
       setLoading(false);
     }
@@ -138,8 +138,8 @@ export default function ManageProductsPage() {
       }
       closeForm();
       await load();
-    } catch (err: any) {
-      setError(err.message || "Failed to save product");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to save product");
     } finally {
       setSaving(false);
     }
@@ -150,8 +150,8 @@ export default function ManageProductsPage() {
     try {
       await productApi.remove(id);
       await load();
-    } catch (err: any) {
-      setError(err.message || "Failed to delete product");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to delete product");
     }
   };
 

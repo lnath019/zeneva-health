@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
@@ -10,11 +10,44 @@ import { cn } from "@/lib/utils";
 
 type Tab = "hospitals" | "ambulances";
 
-export default function HealthDirectoryPage() {
+function DirectoryTabs() {
   const searchParams = useSearchParams();
   const highlightId = searchParams.get("hospital");
   const [tab, setTab] = useState<Tab>("hospitals");
 
+  return (
+    <>
+      <div className="flex gap-1 mb-6 border-b border-slate-200">
+        <button
+          onClick={() => setTab("hospitals")}
+          className={cn(
+            "px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors",
+            tab === "hospitals"
+              ? "border-primary text-primary"
+              : "border-transparent text-slate-500 hover:text-slate-700"
+          )}
+        >
+          Hospitals
+        </button>
+        <button
+          onClick={() => setTab("ambulances")}
+          className={cn(
+            "px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors",
+            tab === "ambulances"
+              ? "border-primary text-primary"
+              : "border-transparent text-slate-500 hover:text-slate-700"
+          )}
+        >
+          Ambulances
+        </button>
+      </div>
+
+      {tab === "hospitals" ? <HospitalList highlightId={highlightId} /> : <AmbulanceList />}
+    </>
+  );
+}
+
+export default function HealthDirectoryPage() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <MarketingHeader />
@@ -32,32 +65,9 @@ export default function HealthDirectoryPage() {
             </p>
           </div>
 
-          <div className="flex gap-1 mb-6 border-b border-slate-200">
-            <button
-              onClick={() => setTab("hospitals")}
-              className={cn(
-                "px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors",
-                tab === "hospitals"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-slate-500 hover:text-slate-700"
-              )}
-            >
-              Hospitals
-            </button>
-            <button
-              onClick={() => setTab("ambulances")}
-              className={cn(
-                "px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors",
-                tab === "ambulances"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-slate-500 hover:text-slate-700"
-              )}
-            >
-              Ambulances
-            </button>
-          </div>
-
-          {tab === "hospitals" ? <HospitalList highlightId={highlightId} /> : <AmbulanceList />}
+          <Suspense fallback={null}>
+            <DirectoryTabs />
+          </Suspense>
         </div>
       </main>
       <MarketingFooter />
