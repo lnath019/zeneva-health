@@ -51,7 +51,7 @@ const SOCIAL_LINKS = [
 export function MarketingFooter() {
   return (
     <footer className="bg-slate-900 text-slate-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+      <div className="w-[95%] max-w-none mx-auto py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
         <div>
          <div className="flex items-center mb-4">
             <img
@@ -125,7 +125,7 @@ export function MarketingFooter() {
       </div>
 
       <div className="border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 text-xs text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-2">
+        <div className="w-[95%] max-w-none mx-auto py-5 text-xs text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-2">
           <span>&copy; {new Date().getFullYear()} Zeniva Health Care. All rights reserved.</span>
           <span>Made for a healthier Nepal.</span>
         </div>
