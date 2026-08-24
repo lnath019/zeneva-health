@@ -239,7 +239,7 @@ useEffect(() => {
       {/* Filter / Search Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+          <label className="block min-h-[2rem] text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
             Search Doctor, Hospital or Speciality
           </label>
           <Input
@@ -250,7 +250,7 @@ useEffect(() => {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+          <label className="block min-h-[2rem] text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
             Filter by Hospital
           </label>
           <select
@@ -268,7 +268,7 @@ useEffect(() => {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+          <label className="block min-h-[2rem] text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
             Filter by Speciality
           </label>
           <select
@@ -286,7 +286,7 @@ useEffect(() => {
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+          <label className="block min-h-[2rem] text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
             Filter by Date
           </label>
           <Input
