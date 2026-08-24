@@ -6,6 +6,10 @@
 .pnp.js
 .yarn/install-state.gz
 
+# This project uses pnpm (pnpm-lock.yaml) — an npm-generated lockfile here
+# desyncs from it and breaks Vercel's `pnpm install --frozen-lockfile` step.
+package-lock.json
+
 # testing
 /coverage
 
