@@ -1,7 +1,13 @@
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 
-export default function ContactPage() {
+export default function ContactPage({
+  searchParams,
+}: {
+  searchParams?: { about?: string };
+}) {
+  const about = searchParams?.about?.trim();
+
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <MarketingHeader />
@@ -17,6 +23,17 @@ export default function ContactPage() {
             Have a question about booking, an account issue, or a partnership inquiry?
             Reach out to us directly using the details below.
           </p>
+
+          {about && (
+            <div className="mb-8 flex items-start gap-3 bg-secondary/10 border border-secondary/20 text-slate-700 rounded-xl p-4 text-sm">
+              <svg className="w-5 h-5 shrink-0 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>
+                You&apos;re asking about <strong className="font-bold text-slate-900">{about}</strong> — mention this package when you call or email so we can help you faster.
+              </span>
+            </div>
+          )}
 
           <div className="bg-slate-50 rounded-xl p-8 space-y-6">
             <div>

@@ -1,4 +1,4 @@
-import { Hospital, Ambulance, Slot, Appointment, AppointmentTicket, Specialisation, User, UserProfile, Province, Lab, LabSlot, LabAppointment, Test, MedicalHistoryRecord, RecordCategory, DoctorHospitalLink, HospitalDoctorSchedule, DoctorDetail, DoctorReview, RatingSummary, ReviewEligibility, HospitalDetail, HospitalImage } from '@/types';
+import { Hospital, Ambulance, Slot, Appointment, AppointmentTicket, Specialisation, User, UserProfile, Province, Lab, LabSlot, LabAppointment, Test, MedicalHistoryRecord, RecordCategory, DoctorHospitalLink, HospitalDoctorSchedule, DoctorDetail, DoctorReview, RatingSummary, ReviewEligibility, HospitalDetail, HospitalImage, Blog, BlogType, HealthPackage } from '@/types';
 import { getToken } from '@/lib/auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.zenivahealthcare.com';
@@ -859,5 +859,133 @@ export const opdScheduleApi = {
     return apiRequest<{ message: string }>(`/opd-schedule/${id}`, {
       method: 'DELETE',
     });
+  },
+};
+// ─────────────────────────────────────────
+// BLOGS
+// ─────────────────────────────────────────
+
+async function uploadTo(endpoint: string, file: File) {
+  const token = typeof window !== 'undefined' ? getToken() : null;
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body: formData,
+  });
+
+  const text = await response.text();
+  let data;
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = { message: text };
+  }
+
+  if (!response.ok) {
+    throw new Error(data.message || `Upload failed with status ${response.status}`);
+  }
+
+  // hand back the relative path exactly as stored — callers render it
+  // through mediaUrl(), so the origin isn't baked into the database
+  return data.imageUrl as string;
+}
+
+export interface BlogPayload {
+  topic: string;
+  blogTypeId: string;
+  summary?: string;
+  description?: string;
+  imageUrl?: string;
+  isActive?: boolean;
+}
+
+export const blogApi = {
+  getTypes: async () => {
+    return apiRequest<{ blogTypes: BlogType[] }>('/blogs/types');
+  },
+  createType: async (name: string) => {
+    return apiRequest<{ message: string; blogType: BlogType }>('/blogs/types', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+  },
+  getAll: async (params?: { type?: string; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.type) qs.set('type', params.type);
+    if (params?.limit) qs.set('limit', String(params.limit));
+    const query = qs.toString();
+    return apiRequest<{ blogs: Blog[] }>(`/blogs${query ? `?${query}` : ''}`);
+  },
+  getFeatured: async (limit = 3) => {
+    return apiRequest<{ blogs: Blog[] }>(`/blogs/featured?limit=${limit}`);
+  },
+  getBySlug: async (slug: string) => {
+    return apiRequest<{ blog: Blog }>(`/blogs/${slug}`);
+  },
+  getAllAdmin: async () => {
+    return apiRequest<{ blogs: Blog[] }>('/blogs/admin');
+  },
+  uploadImage: async (file: File) => uploadTo('/blogs/upload-image', file),
+  create: async (data: BlogPayload) => {
+    return apiRequest<{ message: string; blog: Blog }>('/blogs', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  update: async (id: string, data: Partial<BlogPayload>) => {
+    return apiRequest<{ message: string; blog: Blog }>(`/blogs/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+  remove: async (id: string) => {
+    return apiRequest<{ message: string }>(`/blogs/${id}`, { method: 'DELETE' });
+  },
+};
+
+// ─────────────────────────────────────────
+// PACKAGES
+// ─────────────────────────────────────────
+
+export interface PackagePayload {
+  topic: string;
+  activeFrom: string;
+  activeTo: string;
+  description?: string;
+  imageUrl?: string;
+  regularPrice: number;
+  packagePrice: number;
+  isActive?: boolean;
+}
+
+export const packageApi = {
+  // only packages inside their active window come back here
+  getActive: async () => {
+    return apiRequest<{ packages: HealthPackage[] }>('/packages');
+  },
+  getBySlug: async (slug: string) => {
+    return apiRequest<{ package: HealthPackage }>(`/packages/${slug}`);
+  },
+  getAllAdmin: async () => {
+    return apiRequest<{ packages: HealthPackage[] }>('/packages/admin');
+  },
+  uploadImage: async (file: File) => uploadTo('/packages/upload-image', file),
+  create: async (data: PackagePayload) => {
+    return apiRequest<{ message: string; package: HealthPackage }>('/packages', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  update: async (id: string, data: Partial<PackagePayload>) => {
+    return apiRequest<{ message: string; package: HealthPackage }>(`/packages/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+  remove: async (id: string) => {
+    return apiRequest<{ message: string }>(`/packages/${id}`, { method: 'DELETE' });
   },
 };

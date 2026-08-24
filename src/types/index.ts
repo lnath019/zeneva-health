@@ -366,3 +366,55 @@ export interface MedicalHistoryRecord {
   updatedAt: string;
   verifiedBy?: { id: string; fullName: string; role: UserRole } | null;
 }
+
+// ─────────────────────────────────────────
+// BLOGS
+// `description` is HTML produced by the admin rich text editor and
+// sanitized server-side, so it is safe to render directly.
+// ─────────────────────────────────────────
+
+export interface BlogType {
+  id: string;
+  name: string;
+  slug: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Blog {
+  id: string;
+  topic: string;
+  slug: string;
+  blogTypeId: string;
+  summary: string | null;
+  description: string | null;
+  imageUrl: string | null;
+  authoredBy: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  excerpt: string;
+  blogType?: BlogType | null;
+  author?: { id: string; fullName: string; role: UserRole } | null;
+}
+
+// ─────────────────────────────────────────
+// PACKAGES
+// ─────────────────────────────────────────
+
+export interface HealthPackage {
+  id: string;
+  topic: string;
+  slug: string;
+  activeFrom: string;
+  activeTo: string;
+  description: string | null;
+  imageUrl: string | null;
+  regularPrice: number;
+  packagePrice: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  savings: number;
+  savingsPercent: number;
+}

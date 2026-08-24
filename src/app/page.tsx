@@ -8,8 +8,10 @@ import { MarketingFooter } from '@/components/marketing/MarketingFooter';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { useApi } from '@/hooks/useApi';
-import { hospitalApi } from '@/lib/api';
-import { Hospital } from '@/types';
+import { blogApi, hospitalApi, mediaUrl, packageApi } from '@/lib/api';
+import { Blog, HealthPackage, Hospital } from '@/types';
+import { BlogCard } from '@/components/marketing/BlogCard';
+import { RichTextContent } from '@/components/ui/RichTextEditor';
 import { cn } from '@/lib/utils';
 
 type SearchCategory = 'doctor' | 'test' | 'medicine';
@@ -92,21 +94,6 @@ const HOW_IT_WORKS = [
     step: '03',
     title: 'Get Care',
     description: 'Visit your appointment, receive your results, or get your delivery — all tracked in one place.',
-  },
-];
-
-const HEALTH_TIPS = [
-  {
-    title: 'Staying Hydrated in the Monsoon',
-    excerpt: 'Simple habits to keep your fluid intake balanced during Nepal’s humid months.',
-  },
-  {
-    title: 'Understanding Your Annual Checkup',
-    excerpt: 'What a routine physical actually screens for, and why it matters every year.',
-  },
-  {
-    title: 'When to Choose Telehealth vs. In-Person',
-    excerpt: 'A quick guide to picking the right kind of consultation for your symptoms.',
   },
 ];
 
@@ -284,23 +271,25 @@ function FeaturedServicesSection() {
             <Link
               key={service.title}
               href={service.href}
-              className="group bg-white p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-1 hover:border-primary/25 transition-all duration-200"
+              className="group flex items-start gap-4 bg-white p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-1 hover:border-primary/25 transition-all duration-200"
             >
-              <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center mb-4', service.color)}>
+              <div className={cn('w-12 h-12 shrink-0 rounded-xl flex items-center justify-center', service.color)}>
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   {service.icon}
                 </svg>
               </div>
-              <h3 className="text-base font-bold text-slate-800 group-hover:text-primary transition-colors">
-                {service.title}
-              </h3>
-              <p className="mt-2 text-sm text-slate-500 leading-relaxed">{service.description}</p>
-              <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-primary">
-                Explore
-                <svg className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </span>
+              <div className="min-w-0">
+                <h3 className="text-base font-bold text-slate-800 group-hover:text-primary transition-colors">
+                  {service.title}
+                </h3>
+                <p className="mt-2 text-sm text-slate-500 leading-relaxed">{service.description}</p>
+                <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                  Explore
+                  <svg className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </span>
+              </div>
             </Link>
           ))}
         </div>
@@ -314,20 +303,24 @@ function HowItWorksSection() {
     <section className="py-20 bg-tertiary">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeader eyebrow="Simple by design" title="How It Works" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-8 relative">
-          <div className="hidden md:block absolute top-10 left-0 right-0 h-0.5 bg-slate-200" style={{ marginLeft: '16.6%', marginRight: '16.6%' }} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {HOW_IT_WORKS.map((item, index) => (
-            <div key={item.step} className="relative bg-white rounded-2xl p-8 border border-slate-100 shadow-sm text-center">
+            <div
+              key={item.step}
+              className="flex items-start gap-4 bg-white rounded-2xl p-6 border border-slate-100 shadow-sm"
+            >
               <span
                 className={cn(
-                  'relative z-10 inline-flex items-center justify-center w-20 h-20 rounded-full text-white text-3xl font-extrabold mb-6 shadow-md',
+                  'inline-flex shrink-0 items-center justify-center w-14 h-14 rounded-full text-white text-xl font-extrabold shadow-md',
                   index % 2 === 0 ? 'bg-primary shadow-primary/20' : 'bg-secondary shadow-secondary/20'
                 )}
               >
                 {item.step}
               </span>
-              <h3 className="text-lg font-bold text-slate-800">{item.title}</h3>
-              <p className="mt-2 text-sm text-slate-500 leading-relaxed">{item.description}</p>
+              <div className="min-w-0">
+                <h3 className="text-lg font-bold text-slate-800">{item.title}</h3>
+                <p className="mt-2 text-sm text-slate-500 leading-relaxed">{item.description}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -403,22 +396,148 @@ function PartnerHospitalsSection() {
   );
 }
 
+function ActivePackagesSection() {
+  const [packages, setPackages] = useState<HealthPackage[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    packageApi
+      .getActive()
+      .then((res) => {
+        if (!cancelled) setPackages(res.packages);
+      })
+      // a failed fetch is treated the same as "nothing active": the section
+      // simply stays off the page rather than showing an error to a visitor
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (packages.length === 0) return null;
+
+  const isSingle = packages.length === 1;
+
+  return (
+    <section className="py-20 bg-white border-t border-slate-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <SectionHeader
+          eyebrow="Limited time"
+          title={isSingle ? 'Currently Active Package' : 'Packages'}
+          subtitle="Bundled care at a better price, available for a limited window."
+        />
+
+        <div
+          className={cn(
+            'grid gap-6',
+            isSingle ? 'grid-cols-1 max-w-3xl mx-auto' : 'grid-cols-1 lg:grid-cols-2'
+          )}
+        >
+          {packages.map((pkg) => {
+            const image = mediaUrl(pkg.imageUrl);
+            return (
+              <div
+                key={pkg.id}
+                className="flex items-start gap-5 bg-white rounded-2xl border border-slate-100 shadow-sm p-6"
+              >
+                <div className="w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-primary-light flex items-center justify-center">
+                  {image ? (
+                    <img src={image} alt={pkg.topic} className="w-full h-full object-cover" />
+                  ) : (
+                    <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <h3 className="text-lg font-bold text-slate-800">{pkg.topic}</h3>
+                    {pkg.savingsPercent > 0 && (
+                      <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                        Save {pkg.savingsPercent}%
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="mt-1 text-xs font-semibold text-slate-400">
+                    Available until {new Date(pkg.activeTo).toLocaleDateString(undefined, {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </p>
+
+                  {pkg.description && (
+                    <RichTextContent
+                      html={pkg.description}
+                      className="mt-3 text-sm line-clamp-4"
+                    />
+                  )}
+
+                  <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-3">
+                    <span className="flex items-baseline gap-3">
+                      <span className="text-2xl font-extrabold text-primary">Rs. {pkg.packagePrice}</span>
+                      {pkg.savings > 0 && (
+                        <span className="text-sm text-slate-400 line-through">Rs. {pkg.regularPrice}</span>
+                      )}
+                    </span>
+                    <Link
+                      href={`/contact?about=${encodeURIComponent(pkg.topic)}`}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-secondary hover:bg-secondary-hover transition-colors"
+                    >
+                      Contact Us to Book
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function HealthTipsSection() {
+  const [blogs, setBlogs] = useState<Blog[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    blogApi
+      .getFeatured(3)
+      .then((res) => {
+        if (!cancelled) setBlogs(res.blogs);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // nothing published under Health Tips yet — leave the homepage alone
+  // rather than showing an empty strip
+  if (blogs.length === 0) return null;
+
   return (
     <section className="py-20 bg-tertiary">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeader eyebrow="Stay informed" title="Health Tips & Highlights" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {HEALTH_TIPS.map((tip) => (
-            <div key={tip.title} className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
-              <span className="inline-block text-xs font-bold uppercase tracking-wider text-secondary mb-3">
-                Health Tip
-              </span>
-              <h3 className="text-base font-bold text-slate-800">{tip.title}</h3>
-              <p className="mt-2 text-sm text-slate-500 leading-relaxed">{tip.excerpt}</p>
-              <span className="inline-block mt-4 text-xs font-semibold text-slate-400">Full articles coming soon</span>
-            </div>
+          {blogs.map((blog) => (
+            <BlogCard key={blog.id} blog={blog} />
           ))}
+        </div>
+
+        <div className="text-center mt-10">
+          <Link
+            href="/blog"
+            className="inline-flex items-center justify-center px-8 py-4 rounded-xl bg-primary text-white text-base font-bold shadow-md shadow-primary/20 hover:bg-primary-hover hover:shadow-lg transition-all"
+          >
+            Read all articles &rarr;
+          </Link>
         </div>
       </div>
     </section>
@@ -432,14 +551,16 @@ function TestimonialsSection() {
         <SectionHeader eyebrow="What patients say" title="Testimonials" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {TESTIMONIALS.map((t) => (
-            <div key={t.name} className="bg-slate-50 rounded-xl p-6 border border-slate-100">
-              <svg className="w-8 h-8 text-primary/30 mb-3" fill="currentColor" viewBox="0 0 24 24">
+            <div key={t.name} className="flex items-start gap-4 bg-slate-50 rounded-xl p-6 border border-slate-100">
+              <svg className="w-8 h-8 shrink-0 text-primary/30" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M7.17 6A5.17 5.17 0 002 11.17V18h6.83v-6.83H5.5a2.83 2.83 0 012.83-2.83V6zm10 0A5.17 5.17 0 0012 11.17V18h6.83v-6.83H15.5a2.83 2.83 0 012.83-2.83V6z" />
               </svg>
-              <p className="text-sm text-slate-600 leading-relaxed italic">&ldquo;{t.quote}&rdquo;</p>
-              <div className="mt-4">
-                <p className="text-sm font-bold text-slate-800">{t.name}</p>
-                <p className="text-xs text-slate-400">{t.location}</p>
+              <div className="min-w-0">
+                <p className="text-sm text-slate-600 leading-relaxed italic">&ldquo;{t.quote}&rdquo;</p>
+                <div className="mt-4">
+                  <p className="text-sm font-bold text-slate-800">{t.name}</p>
+                  <p className="text-xs text-slate-400">{t.location}</p>
+                </div>
               </div>
             </div>
           ))}
@@ -510,6 +631,7 @@ export default function HomePage() {
         <FeaturedServicesSection />
         <HowItWorksSection />
         <PartnerHospitalsSection />
+        <ActivePackagesSection />
         <HealthTipsSection />
         <TestimonialsSection />
         <ContactCtaSection />
