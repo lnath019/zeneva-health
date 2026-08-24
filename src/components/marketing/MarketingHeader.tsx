@@ -79,7 +79,7 @@ export function MarketingHeader() {
 
   return (
     <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div className="w-[95%] max-w-none mx-auto h-20 flex items-center justify-between">
        <Link href="/" className="flex items-center select-none shrink-0">
           <img
             src={LOGO_SRC}
