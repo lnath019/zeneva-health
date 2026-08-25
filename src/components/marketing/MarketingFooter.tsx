@@ -20,7 +20,8 @@ const POLICY_LINKS = [
 const SOCIAL_LINKS = [
   {
     label: 'WhatsApp',
-    href: '#',
+    href: 'https://api.whatsapp.com/send?phone=9779851132452',
+    external: true,
     icon: (
       <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.39 1.26 4.86L2 22l5.36-1.36a9.9 9.9 0 004.68 1.19h.01c5.46 0 9.9-4.45 9.9-9.91C21.95 6.45 17.5 2 12.04 2zm0 1.8a8.1 8.1 0 018.11 8.11c0 4.48-3.63 8.11-8.11 8.11a8 8 0 01-4.14-1.14l-.3-.18-3.18.81.85-3.1-.2-.32a8.07 8.07 0 01-1.24-4.28 8.1 8.1 0 018.11-8.11zm-4.3 4.4c-.18 0-.47.07-.71.34-.24.27-.93.9-.93 2.2s.95 2.55 1.08 2.73c.13.18 1.85 2.92 4.55 4 .64.26 1.13.42 1.52.53.64.18 1.22.16 1.68.1.51-.08 1.57-.64 1.79-1.26.22-.62.22-1.14.15-1.26-.07-.11-.24-.18-.5-.32-.27-.13-1.57-.78-1.82-.87-.24-.09-.42-.13-.6.14-.18.27-.68.87-.84 1.05-.15.18-.31.2-.58.07-.27-.14-1.14-.42-2.17-1.34-.8-.72-1.35-1.6-1.5-1.87-.16-.27-.02-.42.12-.55.12-.12.27-.31.4-.47.13-.15.18-.27.27-.44.09-.18.04-.34-.02-.48-.07-.14-.6-1.45-.83-1.98-.22-.52-.44-.45-.6-.46-.16-.01-.34-.01-.52-.01z" />
     ),
@@ -77,6 +78,7 @@ export function MarketingFooter() {
                 key={social.label}
                 href={social.href}
                 aria-label={social.label}
+                {...(social.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                 className="w-9 h-9 flex items-center justify-center rounded-full bg-slate-800 text-slate-300 hover:bg-primary hover:text-white transition-colors"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
