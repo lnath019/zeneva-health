@@ -7,9 +7,6 @@ Deployment Count 5
 First, run the development server:
 
 
-
-
-
 ```bash
 npm run dev
 # or
