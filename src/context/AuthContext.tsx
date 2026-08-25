@@ -15,6 +15,7 @@ interface AuthContextType {
   verifyOtp: (email: string, code: string, redirectTo?: string) => Promise<void>;
   loginWithPassword: (email: string, password: string, redirectTo?: string) => Promise<void>;
   setPassword: (password: string) => Promise<void>;
+  completeAccountSetup: (fullName: string, password: string) => Promise<void>;
   signOut: () => void;
 }
 
@@ -97,6 +98,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push('/dashboard');
   };
 
+  // Used on first login: new accounts must give themselves a real name and a
+  // password before they can continue, so both are saved together here.
+  const completeAccountSetup = async (fullName: string, password: string) => {
+    await authApi.updateProfile(fullName);
+    await authApi.setPassword(password);
+    router.push('/dashboard');
+  };
+
   const signOut = () => {
     removeToken();
     setTokenState(null);
@@ -116,6 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         verifyOtp,
         loginWithPassword,
         setPassword,
+        completeAccountSetup,
         signOut,
       }}
     >
