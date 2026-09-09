@@ -84,7 +84,7 @@ export function MarketingHeader() {
           <img
             src={LOGO_SRC}
             alt={LOGO_ALT}
-            className="h-16 w-auto"
+            className="h-[72px] w-auto"
           />
         </Link>
 

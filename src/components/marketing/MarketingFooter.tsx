@@ -65,7 +65,7 @@ export function MarketingFooter() {
             <img
               src={LOGO_SRC}
               alt={LOGO_ALT}
-              className="h-16 w-auto brightness-0 invert"
+              className="h-20 w-auto brightness-0 invert"
             />
           </div>
           <p className="text-sm text-slate-400 leading-relaxed">

@@ -337,7 +337,7 @@ export function Sidebar() {
           <img
             src={LOGO_SRC}
             alt={LOGO_ALT}
-            className="h-10 w-auto"
+            className="h-12 w-auto"
           />
         </div>
 
