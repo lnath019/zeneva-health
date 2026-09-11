@@ -215,14 +215,14 @@ export default function BookDiagnosticsPage() {
                   </p>
                   <p>
                     <span className="font-semibold text-slate-800">Call us: </span>
-                    <a href="tel:+97714440000" className="text-primary hover:underline">
-                      +977-1-4440000
+                    <a href="tel:+97715927435" className="text-primary hover:underline">
+                      +977-1-5927435
                     </a>
                   </p>
                   <p>
                     <span className="font-semibold text-slate-800">Email us: </span>
-                    <a href="mailto:support@zeneva.com" className="text-primary hover:underline">
-                      support@zeneva.com
+                    <a href="mailto:admin.zenivahealthcare@gmail.com" className="text-primary hover:underline">
+                      admin.zenivahealthcare@gmail.com
                     </a>
                   </p>
                 </div>

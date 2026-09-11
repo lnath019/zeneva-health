@@ -768,10 +768,10 @@ function ContactCtaSection() {
         </div>
         <div className="flex flex-wrap justify-center gap-3">
 <a
-            href="tel:+97714440000"
+            href="tel:+97715927435"
             className="inline-flex items-center justify-center px-6 py-3 text-lg rounded-lg font-medium bg-white text-secondary hover:bg-slate-100 transition-colors"
           >
-            Call +977-1-4440000
+            Call +977-1-5927435
             </a>
           <Link
             href="/contact"

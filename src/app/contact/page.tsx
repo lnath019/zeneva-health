@@ -40,16 +40,16 @@ export default function ContactPage({
               <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Phone
               </span>
-              <a href="tel:+97714440000" className="text-lg font-semibold text-slate-800 hover:text-primary transition-colors">
-                +977-1-4440000
+              <a href="tel:+97715927435" className="text-lg font-semibold text-slate-800 hover:text-primary transition-colors">
+                +977-1-5927435
               </a>
             </div>
             <div>
               <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Email
               </span>
-              <a href="mailto:support@zeneva.com" className="text-lg font-semibold text-slate-800 hover:text-primary transition-colors">
-                support@zeneva.com
+              <a href="mailto:admin.zenivahealthcare@gmail.com" className="text-lg font-semibold text-slate-800 hover:text-primary transition-colors">
+                admin.zenivahealthcare@gmail.com
               </a>
             </div>
             <div>
