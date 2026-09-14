@@ -221,8 +221,8 @@ export default function BookDiagnosticsPage() {
                   </p>
                   <p>
                     <span className="font-semibold text-slate-800">Email us: </span>
-                    <a href="mailto:admin.zenivahealthcare@gmail.com" className="text-primary hover:underline">
-                      admin.zenivahealthcare@gmail.com
+                    <a href="mailto:reception.zenivahealthcare@gmail.com" className="text-primary hover:underline">
+                      reception.zenivahealthcare@gmail.com
                     </a>
                   </p>
                 </div>

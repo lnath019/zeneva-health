@@ -115,8 +115,8 @@ export function MarketingFooter() {
               </a>
             </li>
             <li>
-              <a href="mailto:admin.zenivahealthcare@gmail.com" className="hover:text-white transition-colors">
-                admin.zenivahealthcare@gmail.com
+              <a href="mailto:reception.zenivahealthcare@gmail.com" className="hover:text-white transition-colors">
+                reception.zenivahealthcare@gmail.com
               </a>
             </li>
             <li className="text-slate-400">Kathmandu, Nepal</li>

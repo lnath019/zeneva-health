@@ -48,8 +48,8 @@ export default function ContactPage({
               <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Email
               </span>
-              <a href="mailto:admin.zenivahealthcare@gmail.com" className="text-lg font-semibold text-slate-800 hover:text-primary transition-colors">
-                admin.zenivahealthcare@gmail.com
+              <a href="mailto:reception.zenivahealthcare@gmail.com" className="text-lg font-semibold text-slate-800 hover:text-primary transition-colors">
+                reception.zenivahealthcare@gmail.com
               </a>
             </div>
             <div>
