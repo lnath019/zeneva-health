@@ -4,11 +4,9 @@ import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
-import { useAuth } from "@/context/AuthContext";
 
 export function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { items, updateQuantity, removeFromCart, totalPrice, clearCart } = useCart();
-  const { token } = useAuth();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
@@ -20,10 +18,6 @@ export function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () =
 
   function handleCheckout() {
     onClose();
-    if (!token) {
-      router.push("/login?redirect=/checkout");
-      return;
-    }
     router.push("/checkout");
   }
 

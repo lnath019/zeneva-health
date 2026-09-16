@@ -1,4 +1,4 @@
-import { Hospital, Ambulance, Slot, Appointment, AppointmentTicket, Specialisation, User, UserProfile, Province, Lab, LabSlot, LabAppointment, Test, MedicalHistoryRecord, RecordCategory, DoctorHospitalLink, HospitalDoctorSchedule, DoctorDetail, DoctorReview, RatingSummary, ReviewEligibility, HospitalDetail, HospitalImage, Blog, BlogType, HealthPackage } from '@/types';
+import { Hospital, Ambulance, Slot, Appointment, AppointmentTicket, Specialisation, User, UserProfile, Province, Test, MedicalHistoryRecord, RecordCategory, DoctorHospitalLink, HospitalDoctorSchedule, DoctorDetail, DoctorReview, RatingSummary, ReviewEligibility, HospitalDetail, HospitalImage, Blog, BlogType, HealthPackage } from '@/types';
 import { getToken } from '@/lib/auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.zenivahealthcare.com';
@@ -439,12 +439,38 @@ export const adminApi = {
   getAllAppointments: async () => {
     return apiRequest<Appointment[]>('/admin/appointments');
   },
-  getAllLabs: async () => {
-    return apiRequest<Lab[]>('/admin/labs');
+
+  getLabBookings: async (status?: LabBookingStatus) => {
+    const qs = status ? `?status=${status}` : '';
+    return apiRequest<{ bookings: AdminLabBooking[] }>(`/admin/lab-bookings${qs}`);
   },
-  approveLab: async (labId: string) => {
-    return apiRequest<{ message: string; lab: Lab }>(`/admin/labs/${labId}/approve`, {
+  updateLabBooking: async (id: string, data: { status?: LabBookingStatus; adminNote?: string }) => {
+    return apiRequest<{ message: string; booking: AdminLabBooking }>(`/admin/lab-bookings/${id}`, {
       method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  getOrders: async () => {
+    return apiRequest<{ orders: BackendOrder[] }>('/admin/orders');
+  },
+  updateOrderStatus: async (id: string, status: OrderStatus) => {
+    return apiRequest<{ message: string; order: BackendOrder }>(`/admin/orders/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  },
+
+  createUser: async (data: {
+    fullName: string;
+    email?: string;
+    phone?: string;
+    password: string;
+    role: 'patient' | 'doctor' | 'hospital_admin';
+  }) => {
+    return apiRequest<{ message: string; user: User }>('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   },
 };
@@ -522,85 +548,40 @@ export const testApi = {
   },
 };
 
-export const labApi = {
-  getAll: async () => {
-    return apiRequest<Lab[]>('/labs');
-  },
-  register: async (data: {
-    name: string;
-    provinceId: string;
-    districtId: string;
-    municipalityId: string;
-    address?: string;
-    phone?: string;
+export type LabBookingStatus = 'pending' | 'addressed' | 'cancelled';
+
+export interface LabBooking {
+  id: string;
+  fullName: string;
+  phone: string;
+  email?: string | null;
+  testId?: string | null;
+  notes?: string | null;
+  status: LabBookingStatus;
+  adminNote?: string | null;
+  createdAt: string;
+  test?: { id: string; name: string };
+}
+
+export interface AdminLabBooking extends LabBooking {
+  user?: { id: string; fullName: string; email: string; phone: string };
+}
+
+export const labBookingApi = {
+  create: async (data: {
+    fullName: string;
+    phone: string;
+    email?: string;
+    testId?: string;
+    notes?: string;
   }) => {
-    return apiRequest<{ message: string; lab: Lab }>('/labs/register', {
+    return apiRequest<{ message: string; booking: LabBooking }>('/labs/bookings', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
-  getMy: async () => {
-    return apiRequest<Lab>('/labs/my');
-  },
-  setMyTests: async (testIds: string[]) => {
-    return apiRequest<{ message: string; lab: Lab }>('/labs/my/tests', {
-      method: 'PATCH',
-      body: JSON.stringify({ testIds }),
-    });
-  },
-  getSlots: async (testId?: string) => {
-    const qs = testId ? `?testId=${testId}` : '';
-    return apiRequest<LabSlot[]>(`/labs/slots${qs}`);
-  },
-  getMySlots: async () => {
-    return apiRequest<LabSlot[]>('/labs/slots/my');
-  },
-  createSlot: async (slotData: {
-    slotDate: string;
-    startTime: string;
-    endTime: string;
-    maxTokens: number;
-  }) => {
-    return apiRequest<{ message: string; slot: LabSlot }>('/labs/slots', {
-      method: 'POST',
-      body: JSON.stringify(slotData),
-    });
-  },
-  pauseSlot: async (slotId: string) => {
-    return apiRequest<{ message: string; slot: LabSlot }>(`/labs/slots/${slotId}/pause`, {
-      method: 'PATCH',
-    });
-  },
-  resumeSlot: async (slotId: string) => {
-    return apiRequest<{ message: string; slot: LabSlot }>(`/labs/slots/${slotId}/resume`, {
-      method: 'PATCH',
-    });
-  },
-  endSlot: async (slotId: string) => {
-    return apiRequest<{ message: string; slot: LabSlot }>(`/labs/slots/${slotId}/end`, {
-      method: 'PATCH',
-    });
-  },
-};
-
-export const labAppointmentApi = {
-  book: async (labSlotId: string, testId: string, notes?: string, recordIds?: string[]) => {
-    return apiRequest<{ message: string; appointment: LabAppointment }>('/labs/appointments/book', {
-      method: 'POST',
-      body: JSON.stringify({ labSlotId, testId, notes, recordIds }),
-    });
-  },
-  getMyAppointments: async () => {
-    return apiRequest<LabAppointment[]>('/labs/appointments/my');
-  },
-  getBySlot: async (labSlotId: string) => {
-    return apiRequest<LabAppointment[]>(`/labs/appointments/slot/${labSlotId}`);
-  },
-  updateStatus: async (appointmentId: string, status: LabAppointment['status']) => {
-    return apiRequest<{ message: string; appointment: LabAppointment }>(`/labs/appointments/${appointmentId}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    });
+  my: async () => {
+    return apiRequest<{ bookings: LabBooking[] }>('/labs/bookings/my');
   },
 };
 
@@ -707,27 +688,45 @@ export const addressApi = {
   },
 };
 
+export type OrderStatus = 'pending' | 'confirmed' | 'delivered' | 'cancelled';
+
 export interface BackendOrder {
   id: string;
   userId: string;
   addressId: string;
-  status: string;
-  paymentMethod: string;
-  paymentStatus: string;
+  status: OrderStatus;
   subtotal: number;
-  discount: number;
   deliveryCharge: number;
   grandTotal: number;
   rewardPoints: number;
-  items: { productId: string; productName: string; unitPrice: number; quantity: number }[];
+  createdAt: string;
+  items: { id: string; productId: string; productName: string; unitPrice: number; quantity: number }[];
   address: BackendAddress;
+  user?: { id: string; fullName: string; email: string; phone: string };
+}
+
+export interface GuestCheckoutPayload {
+  fullName: string;
+  phone: string;
+  email?: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  district: string;
+  items: { productId: string; quantity: number }[];
 }
 
 export const orderApi = {
-  create: async (addressId: string, paymentMethod: 'cod' | 'esewa' | 'card') => {
+  create: async (addressId: string) => {
     return apiRequest<{ message: string; order: BackendOrder }>('/orders', {
       method: 'POST',
-      body: JSON.stringify({ addressId, paymentMethod }),
+      body: JSON.stringify({ addressId }),
+    });
+  },
+  guestCheckout: async (data: GuestCheckoutPayload) => {
+    return apiRequest<{ message: string; order: BackendOrder }>('/orders/checkout', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   },
   getAll: async () => {

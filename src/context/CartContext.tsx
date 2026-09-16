@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useCallback, useMemo, useEf
 import { Product, PRODUCTS } from "@/data/products";
 import { useAuth } from "@/context/AuthContext";
 import { cartApi, BackendCartItem } from "@/lib/api";
+import { getToken } from "@/lib/auth";
 
 export interface CartItem {
   product: Product;
@@ -22,8 +23,39 @@ interface CartContextValue {
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
+const GUEST_CART_KEY = "zeneva_guest_cart";
+
 function findProduct(productId: string): Product | undefined {
   return PRODUCTS.find((p) => p.id === productId);
+}
+
+function loadGuestCart(): CartItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(GUEST_CART_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as { productId: string; quantity: number }[];
+    return parsed
+      .map((entry) => {
+        const product = findProduct(entry.productId);
+        return product ? { product, quantity: entry.quantity } : null;
+      })
+      .filter((item): item is CartItem => item !== null);
+  } catch {
+    return [];
+  }
+}
+
+function persistGuestCart(items: CartItem[]) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      GUEST_CART_KEY,
+      JSON.stringify(items.map((i) => ({ productId: i.product.id, quantity: i.quantity })))
+    );
+  } catch {
+    // storage unavailable — the in-memory cart still works
+  }
 }
 
 function toCartItems(backendItems: BackendCartItem[]): CartItem[] {
@@ -37,7 +69,10 @@ function toCartItems(backendItems: BackendCartItem[]): CartItem[] {
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const { token } = useAuth();
-  const [items, setItems] = useState<CartItem[]>([]);
+  // A stored token means the user is logged in even on the first render
+  // (before AuthContext finishes initializing) — only hydrate the guest
+  // cart when there genuinely is no session.
+  const [items, setItems] = useState<CartItem[]>(() => (getToken() ? [] : loadGuestCart()));
 
   const itemsRef = useRef<CartItem[]>(items);
   useEffect(() => {
@@ -45,17 +80,36 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [items]);
 
   const syncedTokenRef = useRef<string | null>(null);
+  const hadTokenRef = useRef<boolean>(!!getToken());
+
+  // Persist anonymous carts across page loads. While logged in this is a
+  // no-op — the backend cart is the source of truth.
+  useEffect(() => {
+    if (token) return;
+    persistGuestCart(items);
+  }, [items, token]);
 
   // When a token appears (login, or already logged in on page load):
   // push any local (anonymous) items to the backend, then load the
   // backend cart as the source of truth.
   useEffect(() => {
     if (!token) {
-      syncedTokenRef.current = null;
-      setItems([]);
+      // Only wipe the guest cart when a logout just happened — on the
+      // initial render the token simply hasn't loaded yet.
+      if (hadTokenRef.current) {
+        hadTokenRef.current = false;
+        syncedTokenRef.current = null;
+        setItems([]);
+        try {
+          window.localStorage.removeItem(GUEST_CART_KEY);
+        } catch {
+          // storage unavailable — nothing to clear
+        }
+      }
       return;
     }
 
+    hadTokenRef.current = true;
     if (syncedTokenRef.current === token) return;
     syncedTokenRef.current = token;
 

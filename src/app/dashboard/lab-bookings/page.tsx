@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { LabBookings } from '@/components/dashboard/LabBookings';
+import { LabBookingSubmissions } from '@/components/dashboard/LabBookingSubmissions';
 
 export default function LabBookingsPage() {
-  return <LabBookings />;
+  return <LabBookingSubmissions />;
 }
