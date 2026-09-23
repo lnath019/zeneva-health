@@ -20,7 +20,6 @@ export function ManageUsers() {
   const { isLoading: isGrantingHospitalAdmin, execute: grantHospitalAdmin } = useApi(adminApi.grantHospitalAdmin);
   const { execute: deactivateUser } = useApi(adminApi.deactivateUser);
   const { execute: reactivateUser } = useApi(adminApi.reactivateUser);
-  const { isLoading: isCreatingUser, execute: createUser } = useApi(adminApi.createUser);
 
   const [grantTarget, setGrantTarget] = useState<User | null>(null);
   const [nmcNumber, setNmcNumber] = useState('');
@@ -33,15 +32,8 @@ export function ManageUsers() {
   const [hospitalId, setHospitalId] = useState('');
   const [hospitalAdminError, setHospitalAdminError] = useState<string | null>(null);
 
-  const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
-  const [createUserForm, setCreateUserForm] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    password: '',
-    role: 'patient' as 'patient' | 'doctor' | 'hospital_admin',
-  });
-  const [createUserError, setCreateUserError] = useState<string | null>(null);
+  
+  
 
   useEffect(() => {
     fetchUsers();

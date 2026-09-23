@@ -10,7 +10,7 @@ import React, {
 import { useAuth } from "@/context/AuthContext";
 import { useApi } from "@/hooks/useApi";
 import { ambulanceApi, locationApi } from "@/lib/api";
-import { Spinner } from "../ui/Spinner";
+
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Ambulance, District, Municipality, Province } from "@/types";

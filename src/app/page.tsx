@@ -127,15 +127,7 @@ const TESTIMONIALS = [
   },
 ];
 
-function SectionHeader({ eyebrow, title, subtitle }: { eyebrow: string; title: string; subtitle?: string }) {
-  return (
-    <div className="text-center max-w-2xl mx-auto mb-12">
-      <span className="text-xs font-bold uppercase tracking-wider text-primary">{eyebrow}</span>
-      <h2 className="mt-2 text-3xl font-bold text-slate-800 tracking-tight">{title}</h2>
-      {subtitle && <p className="mt-3 text-slate-500 leading-relaxed">{subtitle}</p>}
-    </div>
-  );
-}
+
 
 function SectionGlow({ flip = false }: { flip?: boolean }) {
   return (
@@ -3845,7 +3837,7 @@ function FaqAccordionItem({
         <span
           className={cn(
             'flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-all duration-300',
-            isOpen ? cn(theme.chip, 'rotate-180') : 'bg-slate-50 text-slate-400'
+            isOpen ? cn(theme.bar, 'rotate-180') : 'bg-slate-50 text-slate-400'
           )}
         >
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
