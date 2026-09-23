@@ -139,3 +139,91 @@ body {
   height: 0;
   pointer-events: none;
 }
+
+/* Homepage hero — Figma Make v4 cinematic background */
+@keyframes zeniva-ken-burns {
+  0% { transform: scale(1.08) translate3d(0, 0, 0); }
+  50% { transform: scale(1.12) translate3d(-1.6%, -1%, 0); }
+  100% { transform: scale(1.08) translate3d(0, 0, 0); }
+}
+
+.hero-ken-burns {
+  animation: zeniva-ken-burns 14s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes zeniva-fade-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-stat-d1 { animation: zeniva-fade-up 0.6s ease both; }
+.animate-stat-d2 { animation: zeniva-fade-up 0.6s ease 0.15s both; }
+.animate-stat-d3 { animation: zeniva-fade-up 0.6s ease 0.3s both; }
+.animate-stat-d4 { animation: zeniva-fade-up 0.6s ease 0.45s both; }
+
+@keyframes zeniva-pulse-ring {
+  0% { transform: scale(1); opacity: 0.55; }
+  70% { transform: scale(2.1); opacity: 0; }
+  100% { transform: scale(2.1); opacity: 0; }
+}
+
+@keyframes kenburns {
+  0%   { transform: scale(1) translate(0, 0); }
+  100% { transform: scale(1.12) translate(-1.5%, -1%); }
+}
+
+@keyframes fadeUp {
+  0%   { opacity: 0; transform: translateY(24px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(-12px); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%      { opacity: 1; transform: scale(1.08); }
+}
+
+@keyframes fadeLeft {
+  0%   { opacity: 0; transform: translateX(-24px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeRight {
+  0%   { opacity: 0; transform: translateX(24px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+.animate-glow-pulse {
+  animation: glowPulse 7s ease-in-out infinite;
+}
+
+.animate-fade-left {
+  opacity: 0;
+  animation: fadeLeft 0.8s ease-out forwards;
+}
+
+.animate-fade-right {
+  opacity: 0;
+  animation: fadeRight 0.8s ease-out forwards;
+}
+.animate-kenburns {
+  animation: kenburns 18s ease-in-out infinite alternate;
+}
+
+.animate-fade-up {
+  opacity: 0;
+  animation: fadeUp 0.9s ease-out forwards;
+}
+
+.animate-float-slow {
+  animation: floatSlow 6s ease-in-out infinite;
+}
+
+.trust-pulse-ring {
+  animation: zeniva-pulse-ring 2.2s ease-out infinite;
+}
