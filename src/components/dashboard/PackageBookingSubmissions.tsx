@@ -2,14 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import { useApi } from '@/hooks/useApi';
-import { adminApi } from '@/lib/api';
+import { adminApi, PackageBooking, PackageBookingStatus } from '@/lib/api';
 import { Button } from '../ui/Button';
 import { Spinner } from '../ui/Spinner';
-import { AdminLabBooking, LabBookingStatus } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { serviceLabel } from '@/lib/serviceTypes';
 
-type StatusFilter = 'all' | LabBookingStatus;
+type StatusFilter = 'all' | PackageBookingStatus;
 
 const FILTERS: { id: StatusFilter; label: string }[] = [
   { id: 'all', label: 'All' },
@@ -18,19 +17,19 @@ const FILTERS: { id: StatusFilter; label: string }[] = [
   { id: 'cancelled', label: 'Cancelled' },
 ];
 
-const STATUS_BADGE: Record<LabBookingStatus, string> = {
+const STATUS_BADGE: Record<PackageBookingStatus, string> = {
   pending: 'bg-amber-50 text-amber-700 border-amber-200',
   addressed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   cancelled: 'bg-red-50 text-red-600 border-red-200',
 };
 
-export function LabBookingSubmissions() {
-  const { data, isLoading, error, execute: fetchBookings } = useApi(adminApi.getLabBookings);
-  const { isLoading: isSaving, execute: updateLabBooking } = useApi(adminApi.updateLabBooking);
+export function PackageBookingSubmissions() {
+  const { data, isLoading, error, execute: fetchBookings } = useApi(adminApi.getPackageBookings);
+  const { isLoading: isSaving, execute: updateBooking } = useApi(adminApi.updatePackageBooking);
 
   const [filter, setFilter] = useState<StatusFilter>('pending');
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [draftStatus, setDraftStatus] = useState<LabBookingStatus>('pending');
+  const [draftStatus, setDraftStatus] = useState<PackageBookingStatus>('pending');
   const [draftNote, setDraftNote] = useState('');
   const [saveError, setSaveError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -39,7 +38,7 @@ export function LabBookingSubmissions() {
     fetchBookings(filter === 'all' ? undefined : filter);
   }, [filter, fetchBookings]);
 
-  const handleExpand = (booking: AdminLabBooking) => {
+  const handleExpand = (booking: PackageBooking) => {
     if (expandedId === booking.id) {
       setExpandedId(null);
       setSaveError(null);
@@ -51,11 +50,11 @@ export function LabBookingSubmissions() {
     setSaveError(null);
   };
 
-  const handleSave = async (booking: AdminLabBooking) => {
+  const handleSave = async (booking: PackageBooking) => {
     setSaveError(null);
     setSavingId(booking.id);
     try {
-      await updateLabBooking(booking.id, { status: draftStatus, adminNote: draftNote.trim() || undefined });
+      await updateBooking(booking.id, { status: draftStatus, adminNote: draftNote.trim() || undefined });
       setExpandedId(null);
       await fetchBookings(filter === 'all' ? undefined : filter);
     } catch (err) {
@@ -70,8 +69,8 @@ export function LabBookingSubmissions() {
   return (
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
-        <h2 className="text-xl font-bold text-slate-800">Lab Booking Requests</h2>
-        <p className="text-slate-500 text-xs mt-1">Review lab test requests submitted by patients and follow up with them.</p>
+        <h2 className="text-xl font-bold text-slate-800">Package Bookings</h2>
+        <p className="text-slate-500 text-xs mt-1">Review package bookings submitted from the site and follow up with the customer.</p>
       </div>
 
       <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-wrap gap-2">
@@ -102,10 +101,10 @@ export function LabBookingSubmissions() {
         </div>
       ) : bookings.length === 0 ? (
         <div className="bg-white border border-slate-100 rounded-xl p-12 text-center text-slate-500 font-medium">
-          No {filter === 'all' ? '' : filter} booking requests found.
+          No {filter === 'all' ? '' : filter} package bookings found.
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-slate-50 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -113,14 +112,14 @@ export function LabBookingSubmissions() {
                 <th className="px-6 py-3">Name</th>
                 <th className="px-6 py-3">Phone</th>
                 <th className="px-6 py-3">Email</th>
-                <th className="px-6 py-3">Test</th>
+                <th className="px-6 py-3">Package</th>
                 <th className="px-6 py-3">Service</th>
                 <th className="px-6 py-3">Status</th>
                 <th className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {bookings.map((booking: AdminLabBooking) => (
+              {bookings.map((booking: PackageBooking) => (
                 <React.Fragment key={booking.id}>
                   <tr className="border-t border-slate-50 align-top">
                     <td className="px-6 py-4 text-slate-500 text-xs whitespace-nowrap">
@@ -129,8 +128,10 @@ export function LabBookingSubmissions() {
                     <td className="px-6 py-4 font-semibold text-slate-800">{booking.fullName}</td>
                     <td className="px-6 py-4 text-slate-600">{booking.phone}</td>
                     <td className="px-6 py-4 text-slate-500">{booking.email || '—'}</td>
-                    <td className="px-6 py-4 text-slate-600">{booking.test?.name || '—'}</td>
-                    <td className="px-6 py-4 text-slate-600">{serviceLabel(booking.serviceType)}</td>
+                    <td className="px-6 py-4 text-slate-600">
+                      {booking.package?.topic || <span className="text-slate-400">Package removed</span>}
+                    </td>
+                    <td className="px-6 py-4 text-slate-600 whitespace-nowrap">{serviceLabel(booking.serviceType)}</td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border capitalize ${STATUS_BADGE[booking.status]}`}>
                         {booking.status}
@@ -163,7 +164,7 @@ export function LabBookingSubmissions() {
                             <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Status</label>
                             <select
                               value={draftStatus}
-                              onChange={(e) => setDraftStatus(e.target.value as LabBookingStatus)}
+                              onChange={(e) => setDraftStatus(e.target.value as PackageBookingStatus)}
                               className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                             >
                               <option value="pending">Pending</option>
@@ -176,7 +177,7 @@ export function LabBookingSubmissions() {
                             <textarea
                               value={draftNote}
                               onChange={(e) => setDraftNote(e.target.value)}
-                              placeholder="e.g. Called the patient — sample collection scheduled for 8 AM tomorrow."
+                              placeholder="e.g. Called the customer — home visit scheduled for Sunday 8 AM."
                               rows={2}
                               className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                             />

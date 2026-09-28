@@ -271,76 +271,20 @@ export interface Ambulance {
   } | null;
 }
 
-export interface Test {
+// how a test or package can be delivered
+export type ServiceType = 'virtual' | 'home_service' | 'site_visit';
+
+export interface ServiceFlags {
+  isVirtualAvailable: boolean;
+  isHomeServiceAvailable: boolean;
+  isSiteVisitAvailable: boolean;
+}
+
+export interface Test extends ServiceFlags {
   id: string;
   name: string;
   description: string | null;
   createdAt: string;
-}
-
-export interface LabTest {
-  id: string;
-  labId: string;
-  testId: string;
-  test: Test;
-}
-
-export interface Lab {
-  id: string;
-  userId: string;
-  name: string;
-  municipalityId: string | null;
-  address: string | null;
-  phone: string | null;
-  isApproved: boolean;
-  createdAt: string;
-  updatedAt: string;
-  user?: {
-    id: string;
-    fullName: string;
-    email: string;
-    phone: string | null;
-  };
-  municipality?: {
-    id: string;
-    name: string;
-    type: MunicipalityType;
-    district: {
-      id: string;
-      name: string;
-      province: { id: string; name: string };
-    };
-  } | null;
-  labTests?: LabTest[];
-}
-
-export interface LabSlot {
-  id: string;
-  labId: string;
-  slotDate: string;
-  startTime: string;
-  endTime: string;
-  maxTokens: number;
-  status: 'active' | 'paused' | 'ended';
-  isAvailable: boolean;
-  lab?: Lab;
-}
-
-export interface LabAppointment {
-  id: string;
-  patientId: string;
-  labSlotId: string;
-  testId: string;
-  tokenNumber: number;
-  tokenType: 'online' | 'walk_in';
-  notes: string | null;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'needs_reschedule';
-  bookedAt: string;
-  updatedAt: string;
-  test?: Test;
-  slot?: LabSlot;
-  patient?: { id: string; fullName: string; email: string; phone: string | null };
-  sharedRecords?: MedicalHistoryRecord[];
 }
 
 export type RecordCategory =
@@ -402,7 +346,7 @@ export interface Blog {
 // PACKAGES
 // ─────────────────────────────────────────
 
-export interface HealthPackage {
+export interface HealthPackage extends ServiceFlags {
   id: string;
   topic: string;
   slug: string;

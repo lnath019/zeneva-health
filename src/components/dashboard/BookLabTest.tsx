@@ -7,6 +7,9 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Spinner } from '../ui/Spinner';
+import { ServiceTypePicker } from '../ui/ServiceOptions';
+import { resolveServiceChoice } from '@/lib/serviceTypes';
+import { ServiceType } from '@/types';
 
 export function BookLabTest() {
   const { token } = useAuth();
@@ -17,6 +20,7 @@ export function BookLabTest() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [testId, setTestId] = useState('');
+  const [serviceType, setServiceType] = useState<ServiceType | ''>('');
   const [notes, setNotes] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -39,6 +43,8 @@ export function BookLabTest() {
       });
   }, [token]);
 
+  const selectedTest = tests?.find((t) => t.id === testId) ?? null;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
@@ -48,12 +54,21 @@ export function BookLabTest() {
       return;
     }
 
+    // with a test picked: one option is the default, several need the user's choice.
+    // with no test ("let the team advise me") there is nothing to choose yet.
+    const service = selectedTest ? resolveServiceChoice(selectedTest, serviceType) : undefined;
+    if (selectedTest && !service) {
+      setFormError('Please choose how you would like this service.');
+      return;
+    }
+
     try {
       await createBooking({
         fullName: fullName.trim(),
         phone: phone.trim(),
         email: email.trim() || undefined,
         testId: testId || undefined,
+        serviceType: service || undefined,
         notes: notes.trim() || undefined,
       });
       setSubmitted(true);
@@ -86,6 +101,7 @@ export function BookLabTest() {
               setSubmitted(false);
               setNotes('');
               setTestId('');
+              setServiceType('');
             }}
           >
             Book another test
@@ -152,7 +168,10 @@ export function BookLabTest() {
               <label className="block text-sm font-semibold text-neutralBrand">Test (optional)</label>
               <select
                 value={testId}
-                onChange={(e) => setTestId(e.target.value)}
+                onChange={(e) => {
+                  setTestId(e.target.value);
+                  setServiceType('');
+                }}
                 disabled={isSubmitting}
                 className="w-full rounded-lg border-2 border-slate-200 bg-white px-4 py-2.5 text-sm text-neutralBrand shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               >
@@ -164,6 +183,15 @@ export function BookLabTest() {
                 ))}
               </select>
             </div>
+
+            {selectedTest && (
+              <ServiceTypePicker
+                flags={selectedTest}
+                value={serviceType}
+                onChange={setServiceType}
+                disabled={isSubmitting}
+              />
+            )}
 
             <div className="space-y-1">
               <label className="block text-sm font-semibold text-neutralBrand">Notes (optional)</label>

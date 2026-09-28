@@ -12,6 +12,8 @@ import { blogApi, hospitalApi, mediaUrl, packageApi } from '@/lib/api';
 import { Blog, HealthPackage, Hospital } from '@/types';
 import { BlogCard } from '@/components/marketing/BlogCard';
 import { RichTextContent } from '@/components/ui/RichTextEditor';
+import { ServiceBadges } from '@/components/ui/ServiceOptions';
+import { PackageBookingModal } from '@/components/marketing/PackageBookingModal';
 import { cn } from '@/lib/utils';
 
 type SearchCategory = 'doctor' | 'test' | 'medicine';
@@ -2540,6 +2542,7 @@ function PackageCard({
   isBest,
   now,
   reduceMotion,
+  onBook,
 }: {
   pkg: HealthPackage;
   index: number;
@@ -2547,6 +2550,7 @@ function PackageCard({
   isBest: boolean;
   now: number | null;
   reduceMotion: boolean;
+  onBook: (pkg: HealthPackage) => void;
 }) {
   const { ref, inView } = useInView<HTMLDivElement>(0.2);
   const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
@@ -2696,6 +2700,8 @@ function PackageCard({
           />
         )}
 
+        <ServiceBadges flags={pkg} className="mt-3" />
+
         <div className="mt-auto pt-5">
           <div className="border-t border-dashed border-slate-200 pt-4">
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
@@ -2718,12 +2724,13 @@ function PackageCard({
                 )}
               </div>
 
-              <Link
-                href={`/contact?about=${encodeURIComponent(pkg.topic)}`}
+              <button
+                type="button"
+                onClick={() => onBook(pkg)}
                 className="relative inline-flex items-center gap-1.5 overflow-hidden rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-white shadow-md shadow-secondary/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-secondary-hover hover:shadow-lg"
               >
                 <span className="pointer-events-none absolute inset-y-0 left-0 w-1/3 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-[400%]" />
-                <span className="relative">Contact Us to Book</span>
+                <span className="relative">Book Package</span>
                 <svg
                   className="relative h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5"
                   fill="none"
@@ -2732,7 +2739,7 @@ function PackageCard({
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
-              </Link>
+              </button>
             </div>
           </div>
         </div>
@@ -2753,6 +2760,9 @@ function PackageCard({
 // mounted when there is at least one, so its scroll-reveal hooks always see real DOM nodes
 function PackagesShowcase({ packages }: { packages: HealthPackage[] }) {
   const reduceMotion = usePrefersReducedMotion();
+  // held here rather than in the card: the card is CSS-transformed, which would
+  // make a fixed-position modal inside it position against the card, not the screen
+  const [bookingPackage, setBookingPackage] = useState<HealthPackage | null>(null);
   const now = useNow(1000);
   const { ref: headerRef, inView: headerInView } = useInView<HTMLDivElement>(0.4);
 
@@ -2835,10 +2845,15 @@ function PackagesShowcase({ packages }: { packages: HealthPackage[] }) {
               isBest={index === bestIndex}
               now={now}
               reduceMotion={reduceMotion}
+              onBook={setBookingPackage}
             />
           ))}
         </div>
       </div>
+
+      {bookingPackage && (
+        <PackageBookingModal pkg={bookingPackage} onClose={() => setBookingPackage(null)} />
+      )}
     </section>
   );
 }

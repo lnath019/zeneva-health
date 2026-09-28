@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { packageApi, mediaUrl } from "@/lib/api";
 import { HealthPackage } from "@/types";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
+import { ServiceAvailabilityFields, ServiceBadges } from "@/components/ui/ServiceOptions";
+import { AT_LEAST_ONE_SERVICE_MESSAGE, hasAnyService } from "@/lib/serviceTypes";
 
 const emptyForm = {
   topic: "",
@@ -14,6 +16,9 @@ const emptyForm = {
   regularPrice: "",
   packagePrice: "",
   isActive: true,
+  isVirtualAvailable: false,
+  isHomeServiceAvailable: false,
+  isSiteVisitAvailable: false,
 };
 
 // <input type="date"> speaks YYYY-MM-DD; stored values are timestamps
@@ -80,6 +85,9 @@ export default function ManagePackagesPage() {
       regularPrice: String(p.regularPrice),
       packagePrice: String(p.packagePrice),
       isActive: p.isActive,
+      isVirtualAvailable: p.isVirtualAvailable,
+      isHomeServiceAvailable: p.isHomeServiceAvailable,
+      isSiteVisitAvailable: p.isSiteVisitAvailable,
     });
     setImageFile(null);
     setImagePreview(mediaUrl(p.imageUrl));
@@ -125,6 +133,10 @@ export default function ManagePackagesPage() {
       setError("Active to must be on or after active from");
       return;
     }
+    if (!hasAnyService(form)) {
+      setError(AT_LEAST_ONE_SERVICE_MESSAGE);
+      return;
+    }
 
     setSaving(true);
     setError(null);
@@ -150,6 +162,9 @@ export default function ManagePackagesPage() {
         regularPrice: parseFloat(form.regularPrice),
         packagePrice: parseFloat(form.packagePrice),
         isActive: form.isActive,
+        isVirtualAvailable: form.isVirtualAvailable,
+        isHomeServiceAvailable: form.isHomeServiceAvailable,
+        isSiteVisitAvailable: form.isSiteVisitAvailable,
       };
 
       if (editingId) {
@@ -212,6 +227,7 @@ export default function ManagePackagesPage() {
               <tr>
                 <th className="text-left px-4 py-3">Package</th>
                 <th className="text-left px-4 py-3">Active window</th>
+                <th className="text-left px-4 py-3">Available as</th>
                 <th className="text-left px-4 py-3">Regular</th>
                 <th className="text-left px-4 py-3">Package price</th>
                 <th className="text-left px-4 py-3">Status</th>
@@ -239,6 +255,9 @@ export default function ManagePackagesPage() {
                   </td>
                   <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
                     {formatDate(p.activeFrom)} &ndash; {formatDate(p.activeTo)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <ServiceBadges flags={p} />
                   </td>
                   <td className="px-4 py-3 text-slate-500 line-through">Rs. {p.regularPrice}</td>
                   <td className="px-4 py-3">
@@ -404,6 +423,13 @@ export default function ManagePackagesPage() {
                   off Rs. {regularNum}
                 </p>
               )}
+
+              <ServiceAvailabilityFields
+                value={form}
+                onChange={(services) => setForm((prev) => ({ ...prev, ...services }))}
+                disabled={saving}
+                error={error === AT_LEAST_ONE_SERVICE_MESSAGE ? error : null}
+              />
 
               <label className="flex items-center gap-2 text-sm text-slate-600">
                 <input

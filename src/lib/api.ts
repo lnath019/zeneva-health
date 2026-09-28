@@ -1,4 +1,4 @@
-import { Hospital, Ambulance, Slot, Appointment, AppointmentTicket, Specialisation, User, UserProfile, Province, Test, MedicalHistoryRecord, RecordCategory, DoctorHospitalLink, HospitalDoctorSchedule, DoctorDetail, DoctorReview, RatingSummary, ReviewEligibility, HospitalDetail, HospitalImage, Blog, BlogType, HealthPackage } from '@/types';
+import { Hospital, Ambulance, Slot, Appointment, AppointmentTicket, Specialisation, User, UserProfile, Province, Test, MedicalHistoryRecord, RecordCategory, DoctorHospitalLink, HospitalDoctorSchedule, DoctorDetail, DoctorReview, RatingSummary, ReviewEligibility, HospitalDetail, HospitalImage, Blog, BlogType, HealthPackage, ServiceFlags, ServiceType } from '@/types';
 import { getToken } from '@/lib/auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.zenivahealthcare.com';
@@ -451,6 +451,17 @@ export const adminApi = {
     });
   },
 
+  getPackageBookings: async (status?: PackageBookingStatus) => {
+    const qs = status ? `?status=${status}` : '';
+    return apiRequest<{ bookings: PackageBooking[] }>(`/admin/package-bookings${qs}`);
+  },
+  updatePackageBooking: async (id: string, data: { status: PackageBookingStatus; adminNote?: string }) => {
+    return apiRequest<{ booking: PackageBooking }>(`/admin/package-bookings/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
   getOrders: async () => {
     return apiRequest<{ orders: BackendOrder[] }>('/admin/orders');
   },
@@ -520,13 +531,13 @@ export const testApi = {
   getAll: async () => {
     return apiRequest<Test[]>('/labs/tests');
   },
-  create: async (data: { name: string; description?: string }) => {
+  create: async (data: { name: string; description?: string } & ServiceFlags) => {
     return apiRequest<{ message: string; test: Test }>('/labs/tests', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
-  update: async (id: string, data: Partial<{ name: string; description: string }>) => {
+  update: async (id: string, data: Partial<{ name: string; description: string } & ServiceFlags>) => {
     return apiRequest<{ message: string; test: Test }>(`/labs/tests/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
@@ -536,15 +547,6 @@ export const testApi = {
     return apiRequest<{ message: string }>(`/labs/tests/${id}`, {
       method: 'DELETE',
     });
-  },
-  request: async (testId: string, data: { fullName: string; phone: string; email?: string }) => {
-    return apiRequest<{ message: string; request: { id: string; testId: string; status: string } }>(
-      `/labs/tests/${testId}/request`,
-      {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }
-    );
   },
 };
 
@@ -556,6 +558,7 @@ export interface LabBooking {
   phone: string;
   email?: string | null;
   testId?: string | null;
+  serviceType?: ServiceType | null;
   notes?: string | null;
   status: LabBookingStatus;
   adminNote?: string | null;
@@ -573,6 +576,7 @@ export const labBookingApi = {
     phone: string;
     email?: string;
     testId?: string;
+    serviceType?: ServiceType;
     notes?: string;
   }) => {
     return apiRequest<{ message: string; booking: LabBooking }>('/labs/bookings', {
@@ -949,7 +953,7 @@ export const blogApi = {
 // PACKAGES
 // ─────────────────────────────────────────
 
-export interface PackagePayload {
+export interface PackagePayload extends ServiceFlags {
   topic: string;
   activeFrom: string;
   activeTo: string;
@@ -958,6 +962,23 @@ export interface PackagePayload {
   regularPrice: number;
   packagePrice: number;
   isActive?: boolean;
+}
+
+export type PackageBookingStatus = 'pending' | 'addressed' | 'cancelled';
+
+export interface PackageBooking {
+  id: string;
+  packageId: string | null;
+  fullName: string;
+  phone: string;
+  email?: string | null;
+  serviceType: ServiceType;
+  notes?: string | null;
+  status: PackageBookingStatus;
+  adminNote?: string | null;
+  createdAt: string;
+  package?: { id: string; topic: string; packagePrice: number } | null;
+  user?: { id: string; fullName: string; email: string; phone: string } | null;
 }
 
 export const packageApi = {
@@ -970,6 +991,17 @@ export const packageApi = {
   },
   getAllAdmin: async () => {
     return apiRequest<{ packages: HealthPackage[] }>('/packages/admin');
+  },
+  // public lead capture — works with or without login. serviceType is
+  // required when the package offers several; a lone option is the default.
+  book: async (
+    packageId: string,
+    data: { fullName: string; phone: string; email?: string; serviceType?: ServiceType; notes?: string }
+  ) => {
+    return apiRequest<{ message: string; booking: PackageBooking }>(`/packages/${packageId}/book`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
   uploadImage: async (file: File) => uploadTo('/packages/upload-image', file),
   create: async (data: PackagePayload) => {

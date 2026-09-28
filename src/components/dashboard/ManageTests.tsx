@@ -6,9 +6,17 @@ import { testApi } from '@/lib/api';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Spinner } from '../ui/Spinner';
-import { Test } from '@/types';
+import { ServiceFlags, Test } from '@/types';
+import { ServiceAvailabilityFields, ServiceBadges } from '../ui/ServiceOptions';
+import { AT_LEAST_ONE_SERVICE_MESSAGE, hasAnyService } from '@/lib/serviceTypes';
 
-const EMPTY_FORM = { name: '', description: '' };
+const NO_SERVICES: ServiceFlags = {
+  isVirtualAvailable: false,
+  isHomeServiceAvailable: false,
+  isSiteVisitAvailable: false,
+};
+
+const EMPTY_FORM = { name: '', description: '', ...NO_SERVICES };
 
 export function ManageTests() {
   const { data: tests, isLoading, error, execute: fetchTests, setData: setTests } = useApi(testApi.getAll);
@@ -35,7 +43,13 @@ export function ManageTests() {
 
   const openEditModal = (test: Test) => {
     setEditingId(test.id);
-    setForm({ name: test.name, description: test.description ?? '' });
+    setForm({
+      name: test.name,
+      description: test.description ?? '',
+      isVirtualAvailable: test.isVirtualAvailable,
+      isHomeServiceAvailable: test.isHomeServiceAvailable,
+      isSiteVisitAvailable: test.isSiteVisitAvailable,
+    });
     setFormError(null);
     setIsModalOpen(true);
   };
@@ -49,7 +63,18 @@ export function ManageTests() {
       return;
     }
 
-    const payload = { name: form.name.trim(), description: form.description.trim() || undefined };
+    if (!hasAnyService(form)) {
+      setFormError(AT_LEAST_ONE_SERVICE_MESSAGE);
+      return;
+    }
+
+    const payload = {
+      name: form.name.trim(),
+      description: form.description.trim() || undefined,
+      isVirtualAvailable: form.isVirtualAvailable,
+      isHomeServiceAvailable: form.isHomeServiceAvailable,
+      isSiteVisitAvailable: form.isSiteVisitAvailable,
+    };
 
     try {
       if (editingId) {
@@ -66,7 +91,7 @@ export function ManageTests() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this test? Labs offering it will no longer be able to accept bookings for it.')) return;
+    if (!confirm('Delete this test? It will no longer appear for booking. Existing requests keep their details but lose the test link.')) return;
     setDeletingId(id);
     try {
       await removeTest(id);
@@ -83,7 +108,7 @@ export function ManageTests() {
       <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-slate-800">Manage Tests</h2>
-          <p className="text-slate-500 text-xs mt-1">The master catalog of tests labs can offer.</p>
+          <p className="text-slate-500 text-xs mt-1">The catalog of tests people can request, and how each can be delivered.</p>
         </div>
         <Button onClick={openCreateModal} size="sm">Add Test</Button>
       </div>
@@ -134,6 +159,7 @@ export function ManageTests() {
                 </div>
               </div>
               {test.description && <p className="text-xs text-slate-500">{test.description}</p>}
+              <ServiceBadges flags={test} className="mt-3" />
             </div>
           ))}
         </div>
@@ -176,6 +202,12 @@ export function ManageTests() {
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 placeholder="e.g. Standard CBC panel"
+                disabled={isSaving}
+              />
+
+              <ServiceAvailabilityFields
+                value={form}
+                onChange={(services) => setForm((f) => ({ ...f, ...services }))}
                 disabled={isSaving}
               />
 

@@ -7,11 +7,13 @@ import React, {
   useState,
 } from "react";
 import { useApi } from "@/hooks/useApi";
-import { testApi, authApi } from "@/lib/api";
+import { testApi, authApi, labBookingApi } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
-import { Test } from "@/types";
+import { ServiceType, Test } from "@/types";
+import { ServiceBadges, ServiceTypePicker } from "@/components/ui/ServiceOptions";
+import { resolveServiceChoice, serviceLabel } from "@/lib/serviceTypes";
 
 /* ============================================================================
    STYLES — injected via dangerouslySetInnerHTML so SSR & CSR match byte-for-byte
@@ -1725,6 +1727,8 @@ const TestCard = React.memo(function TestCard({
           </p>
         )}
 
+        <ServiceBadges flags={test} className="mt-3" />
+
         <span className="dx-card-cta mt-4 inline-flex items-center text-xs font-bold uppercase tracking-wider text-primary">
           Request this test
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -1795,6 +1799,7 @@ export default function BookDiagnosticsPage() {
   const shellRef = useCursorTrack<HTMLDivElement>();
 
   const [selectedTest, setSelectedTest] = useState<Test | null>(null);
+  const [serviceType, setServiceType] = useState<ServiceType | "">("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -1822,6 +1827,7 @@ export default function BookDiagnosticsPage() {
 
   const handleOpenModal = useCallback((test: Test) => {
     setSelectedTest(test);
+    setServiceType("");
     setSubmitted(false);
     setSubmitError(null);
   }, []);
@@ -1854,12 +1860,21 @@ export default function BookDiagnosticsPage() {
       return;
     }
 
+    // one option offered -> it's the default; several -> the user has to pick
+    const service = resolveServiceChoice(selectedTest, serviceType);
+    if (!service) {
+      setSubmitError("Please choose how you would like this service.");
+      return;
+    }
+
     setSubmitting(true);
     try {
-      await testApi.request(selectedTest.id, {
+      await labBookingApi.create({
+        testId: selectedTest.id,
         fullName: fullName.trim(),
         phone: phone.trim(),
         email: email.trim() || undefined,
+        serviceType: service,
       });
       setSubmitted(true);
     } catch (err) {
@@ -1905,8 +1920,8 @@ export default function BookDiagnosticsPage() {
               <AnimatedHeadline text="Find a Diagnostic Service" />
 
               <p className="dx-fade-up dx-delay-3 mt-4 text-slate-500 max-w-xl leading-relaxed">
-                Select the test or scan you need, and our team will connect you with a lab or
-                hospital near you. Reports delivered digitally — most ready within 24 hours.
+                Select the test or scan you need, and our team will contact you to arrange it.
+                Reports delivered digitally — most ready within 24 hours.
               </p>
 
               <div className="dx-fade-up dx-delay-4 mt-6 flex flex-wrap gap-2">
@@ -2017,7 +2032,7 @@ export default function BookDiagnosticsPage() {
                 </h2>
                 <p className="mt-3 text-sm text-slate-500 leading-relaxed">
                   Choose the test you need, submit your request with contact details, and our team
-                  reaches out to coordinate with the closest partner lab or hospital.
+                  reaches out to confirm the details and arrange your test.
                 </p>
                 <ul className="mt-5 space-y-3 text-sm">
                   {[
@@ -2154,8 +2169,12 @@ export default function BookDiagnosticsPage() {
                 </div>
                 <h4 className="mt-4 text-base font-bold text-slate-800">Request received</h4>
                 <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                  Our team will contact you shortly to connect you with a lab or hospital that offers{" "}
-                  <strong className="font-semibold text-slate-700">{selectedTest.name}</strong>.
+                  Our team will contact you shortly to confirm your request for{" "}
+                  <strong className="font-semibold text-slate-700">{selectedTest.name}</strong>
+                  {resolveServiceChoice(selectedTest, serviceType) && (
+                    <> ({serviceLabel(resolveServiceChoice(selectedTest, serviceType))})</>
+                  )}
+                  .
                 </p>
                 <button
                   type="button"
@@ -2168,8 +2187,7 @@ export default function BookDiagnosticsPage() {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4 p-6">
                 <p className="text-sm leading-relaxed text-slate-600">
-                  Leave your contact details and we&apos;ll reach out to connect you with a lab or
-                  hospital that offers this test.
+                  Leave your contact details and we&apos;ll reach out to confirm and arrange this test.
                 </p>
 
                 {submitError && (
@@ -2221,6 +2239,13 @@ export default function BookDiagnosticsPage() {
                     placeholder="you@example.com"
                   />
                 </div>
+
+                <ServiceTypePicker
+                  flags={selectedTest}
+                  value={serviceType}
+                  onChange={setServiceType}
+                  disabled={submitting}
+                />
 
                 <button
                   type="submit"
